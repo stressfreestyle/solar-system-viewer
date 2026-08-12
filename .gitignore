@@ -1,0 +1,8 @@
+# 非公開リンクなどのローカル専用メモ
+LOCAL_NOTES.md
+
+# ビルド生成物。公開するのは docs/ に置いたPWA版だけ
+dist/
+solar-system.artifact.html
+
+.DS_Store

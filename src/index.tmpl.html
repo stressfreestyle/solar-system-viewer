@@ -1,0 +1,2150 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>太陽系リアルタイムビューア</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="太陽系">
+<meta name="application-name" content="太陽系">
+<meta name="theme-color" content="#05060c">
+<meta name="color-scheme" content="dark">
+<meta name="description" content="8惑星の現在位置を黄道面の北から見たリアルタイム図。完全オフライン動作。">
+<!--__HEAD_LINKS__-->
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{width:100%;height:100%;overflow:hidden;background:#05060c;
+  font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;
+  color:#dfe6f2;-webkit-user-select:none;user-select:none;overscroll-behavior:none;touch-action:none}
+#sky{position:fixed;inset:0;display:block;touch-action:none}
+
+/* セーフエリア。standalone 起動だとステータスバーとホームインジケータの
+   下に潜り込むので、上下だけでなく横（横向き時のノッチ側）も見る。 */
+:root{
+  --sat:env(safe-area-inset-top,0px);
+  --sab:env(safe-area-inset-bottom,0px);
+  --sal:env(safe-area-inset-left,0px);
+  --sar:env(safe-area-inset-right,0px);
+}
+
+/* ---- top HUD ---- */
+#hud{position:fixed;top:0;left:0;right:0;
+  padding:calc(var(--sat) + 10px) calc(var(--sar) + 14px) 12px calc(var(--sal) + 14px);
+  pointer-events:none;background:linear-gradient(180deg,rgba(5,6,12,.82),rgba(5,6,12,0))}
+#clock{font-size:15px;font-weight:600;letter-spacing:.03em;font-variant-numeric:tabular-nums;
+  text-shadow:0 1px 6px rgba(0,0,0,.9)}
+#sub{margin-top:2px;font-size:10.5px;color:#8c9ab5;letter-spacing:.02em}
+#live{display:inline-block;margin-left:7px;padding:1px 6px;border-radius:8px;font-size:9.5px;font-weight:700;
+  background:#1d6b3f;color:#9df0be;letter-spacing:.05em;vertical-align:1px}
+#live.fast{background:#6b4a12;color:#ffd48a}
+#live.birth{background:#5a2a7a;color:#e8bcff}
+
+/* ---- 中心天体バー ---- */
+#cbar{position:fixed;left:0;right:0;top:calc(var(--sat) + 56px);
+  padding:0 calc(var(--sar) + 12px) 0 calc(var(--sal) + 12px);display:flex;align-items:center;gap:7px;z-index:6;pointer-events:none}
+#cbar>*{pointer-events:auto}
+#cname{display:inline-flex;align-items:center;gap:5px;padding:6px 11px;border-radius:20px;
+  background:rgba(24,32,58,.82);border:1px solid rgba(140,170,240,.34);color:#dce7ff;
+  font-size:12.5px;font-weight:700;letter-spacing:.02em;
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);white-space:nowrap}
+#cname b{color:#8fb4ff;font-weight:700}
+.cbtn{border:1px solid rgba(255,255,255,.15);background:rgba(20,26,46,.8);color:#cfdcf5;
+  border-radius:18px;padding:6px 11px;font:700 12px/1.25 inherit;cursor:pointer;white-space:nowrap;
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.cbtn:active{background:rgba(60,80,140,.85)}
+.cbtn.hot{background:#3a63c8;border-color:#5f85e0;color:#fff}
+.cbtn[hidden]{display:none}
+
+/* ---- bottom controls ---- */
+#ctl{position:fixed;left:0;right:0;bottom:0;
+  padding:12px calc(var(--sar) + 14px) calc(var(--sab) + 12px) calc(var(--sal) + 14px);
+  background:linear-gradient(0deg,rgba(5,6,12,.93) 55%,rgba(5,6,12,0));z-index:5}
+.row{display:flex;align-items:center;gap:9px}
+.seg{display:flex;flex:1;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.11);
+  border-radius:11px;padding:3px;gap:3px}
+.seg button{flex:1;border:0;background:transparent;color:#93a2bd;font:600 12.5px/1 inherit;
+  padding:11px 4px;border-radius:8px;transition:background .18s,color .18s;cursor:pointer}
+.seg button.on{background:#3a63c8;color:#fff;box-shadow:0 1px 8px rgba(58,99,200,.5)}
+.btn{border:1px solid rgba(255,255,255,.13);background:rgba(255,255,255,.07);color:#dfe6f2;
+  font:600 12.5px/1 inherit;padding:12px 13px;border-radius:11px;cursor:pointer;white-space:nowrap}
+.btn:active{background:rgba(255,255,255,.18)}
+#speedwrap{margin-top:11px}
+#speedhead{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:3px}
+#speedhead span:first-child{font-size:10.5px;color:#8c9ab5;letter-spacing:.04em}
+#speedval{font-size:11.5px;font-weight:700;color:#cfe0ff;font-variant-numeric:tabular-nums}
+#speed{-webkit-appearance:none;appearance:none;width:100%;height:30px;background:transparent}
+#speed::-webkit-slider-runnable-track{height:5px;border-radius:3px;
+  background:linear-gradient(90deg,#3a63c8 var(--p,50%),rgba(255,255,255,.16) var(--p,50%))}
+#speed::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;border-radius:50%;
+  background:#fff;margin-top:-10.5px;box-shadow:0 2px 8px rgba(0,0,0,.6),0 0 0 1px rgba(0,0,0,.2)}
+#speed::-moz-range-track{height:5px;border-radius:3px;background:rgba(255,255,255,.16)}
+#speed::-moz-range-thumb{width:26px;height:26px;border:0;border-radius:50%;background:#fff}
+
+/* ---- info sheet ---- */
+#sheet{position:fixed;left:0;right:0;bottom:0;z-index:10;transform:translateY(105%);
+  transition:transform .32s cubic-bezier(.22,.9,.28,1);
+  background:rgba(11,14,26,.97);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+  border-top:1px solid rgba(255,255,255,.13);border-radius:20px 20px 0 0;
+  padding:8px calc(var(--sar) + 18px) calc(var(--sab) + 20px) calc(var(--sal) + 18px);
+  box-shadow:0 -12px 44px rgba(0,0,0,.7);max-height:74vh;overflow-y:auto;-webkit-overflow-scrolling:touch}
+#sheet.open{transform:translateY(0)}
+#grip{width:38px;height:4px;border-radius:2px;background:rgba(255,255,255,.26);margin:4px auto 12px}
+#shead{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+#swatch{width:46px;height:46px;flex:none;border-radius:50%;box-shadow:0 2px 14px rgba(0,0,0,.6)}
+#sname{font-size:20px;font-weight:700;letter-spacing:.02em}
+#sen{font-size:11px;color:#8c9ab5;letter-spacing:.09em;text-transform:uppercase;margin-top:2px}
+#sclose{margin-left:auto;border:0;background:rgba(255,255,255,.09);color:#c8d3e8;
+  width:34px;height:34px;border-radius:50%;font-size:19px;line-height:1;cursor:pointer}
+.facts{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:14px}
+.fact{background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.07);
+  border-radius:11px;padding:9px 11px}
+.fact b{display:block;font-size:9.5px;font-weight:600;color:#8896b1;letter-spacing:.05em;margin-bottom:3px}
+.fact i{font-style:normal;font-size:14px;font-weight:650;font-variant-numeric:tabular-nums;letter-spacing:.01em}
+.fact i small{font-size:10.5px;font-weight:500;color:#93a2bd;margin-left:2px}
+#sdesc{font-size:12.5px;line-height:1.72;color:#b9c5dc}
+#snote{margin-top:11px;font-size:10px;line-height:1.55;color:#6d7b96}
+
+/* ---- 暦シート ---- */
+#cal{position:fixed;left:0;right:0;bottom:0;z-index:11;transform:translateY(105%);
+  transition:transform .32s cubic-bezier(.22,.9,.28,1);
+  background:rgba(10,13,24,.975);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+  border-top:1px solid rgba(255,255,255,.13);border-radius:20px 20px 0 0;
+  padding:8px 0 0;box-shadow:0 -12px 44px rgba(0,0,0,.72);
+  max-height:86vh;display:flex;flex-direction:column}
+#cal.open{transform:translateY(0)}
+#calhead{display:flex;align-items:center;gap:10px;flex:none;
+  padding:2px calc(var(--sar) + 18px) 10px calc(var(--sal) + 18px)}
+#caltitle{font-size:16px;font-weight:700}
+#caldate{font-size:11px;color:#8c9ab5;margin-top:1px;font-variant-numeric:tabular-nums}
+#calclose{margin-left:auto;border:0;background:rgba(255,255,255,.09);color:#c8d3e8;
+  width:34px;height:34px;border-radius:50%;font-size:19px;line-height:1;cursor:pointer;flex:none}
+#calbody{overflow-y:auto;-webkit-overflow-scrolling:touch;
+  padding:0 calc(var(--sar) + 18px) calc(var(--sab) + 22px) calc(var(--sal) + 18px)}
+
+/* 50音歴 */
+#g50{background:linear-gradient(140deg,rgba(58,99,200,.30),rgba(120,70,190,.20));
+  border:1px solid rgba(150,180,255,.28);border-radius:16px;padding:14px 16px;margin-bottom:14px}
+#g50top{display:flex;align-items:center;gap:14px}
+#g50char{font-size:52px;font-weight:700;line-height:.98;letter-spacing:0;
+  color:#fff;text-shadow:0 2px 18px rgba(120,160,255,.55);min-width:62px;text-align:center}
+#g50meta{flex:1;min-width:0}
+#g50no{font-size:10.5px;color:#a9bde8;letter-spacing:.06em;font-weight:600}
+#g50rng{font-size:11px;color:#cfdcf5;margin-top:4px;line-height:1.5;font-variant-numeric:tabular-nums}
+#g50bar{height:5px;border-radius:3px;background:rgba(255,255,255,.15);margin-top:9px;overflow:hidden}
+#g50fill{height:100%;background:linear-gradient(90deg,#7ea6ff,#b98cff);border-radius:3px}
+#g50sub{display:flex;justify-content:space-between;font-size:10.5px;color:#a9bde8;margin-top:6px;
+  font-variant-numeric:tabular-nums}
+#g50note{margin-top:10px;font-size:9.5px;color:#8093b8;line-height:1.5}
+
+/* セクション */
+details.sec{border:1px solid rgba(255,255,255,.09);border-radius:13px;margin-bottom:9px;
+  background:rgba(255,255,255,.035);overflow:hidden}
+details.sec>summary{list-style:none;cursor:pointer;padding:12px 14px;font-size:13px;font-weight:700;
+  display:flex;align-items:center;gap:8px;color:#dbe4f5}
+details.sec>summary::-webkit-details-marker{display:none}
+details.sec>summary::after{content:'▾';margin-left:auto;color:#7b8aa8;font-size:11px;transition:transform .2s}
+details.sec[open]>summary::after{transform:rotate(180deg)}
+details.sec>summary em{font-style:normal;font-weight:600;font-size:11px;color:#94a5c4;margin-left:2px}
+.secbody{padding:0 14px 13px}
+.kv{display:flex;justify-content:space-between;gap:10px;padding:6px 0;font-size:12.5px;
+  border-top:1px solid rgba(255,255,255,.055)}
+.kv:first-child{border-top:0}
+.kv span{color:#93a2bd;flex:none}
+.kv b{font-weight:650;text-align:right;font-variant-numeric:tabular-nums}
+.kv b small{font-weight:500;color:#93a2bd;font-size:10.5px}
+.note{margin-top:9px;padding:9px 11px;border-radius:9px;background:rgba(255,190,90,.09);
+  border:1px solid rgba(255,190,90,.24);font-size:10px;line-height:1.6;color:#e6cfa4}
+.note b{color:#ffd89a}
+#moonrow{display:flex;align-items:center;gap:14px;padding:4px 0 10px}
+#mooncv{flex:none;border-radius:50%;background:#05060c}
+#moonrow div{flex:1;min-width:0}
+.tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.tag{background:rgba(120,180,255,.16);border:1px solid rgba(120,180,255,.3);color:#bcd6ff;
+  border-radius:7px;padding:3px 8px;font-size:10.5px;font-weight:600}
+
+/* ---- 誕生日パネル / 読みシート 共通 ---- */
+.xbtn{margin-left:auto;border:0;background:rgba(255,255,255,.09);color:#c8d3e8;
+  width:34px;height:34px;border-radius:50%;font-size:19px;line-height:1;cursor:pointer;flex:none}
+#birth,#read{position:fixed;left:0;right:0;bottom:0;z-index:12;transform:translateY(105%);
+  transition:transform .32s cubic-bezier(.22,.9,.28,1);
+  background:rgba(10,13,24,.975);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+  border-top:1px solid rgba(255,255,255,.13);border-radius:20px 20px 0 0;
+  box-shadow:0 -12px 44px rgba(0,0,0,.72);max-height:88vh;display:flex;flex-direction:column}
+#birth.open,#read.open{transform:translateY(0)}
+.bhead,#readhead{display:flex;align-items:center;gap:10px;flex:none;
+  padding:16px calc(var(--sar) + 18px) 10px calc(var(--sal) + 18px)}
+.btitle,#readtitle{font-size:16px;font-weight:700}
+.bsub,#readsub{font-size:11px;color:#8c9ab5;margin-top:2px}
+.bbody{overflow-y:auto;-webkit-overflow-scrolling:touch;
+  padding:0 calc(var(--sar) + 18px) calc(var(--sab) + 22px) calc(var(--sal) + 18px)}
+.bl{display:block;font-size:11px;font-weight:600;color:#9fb0cd;margin:12px 0 5px;letter-spacing:.03em}
+.req{background:#3a63c8;color:#fff;border-radius:5px;padding:1px 5px;font-size:9px;margin-left:4px}
+.opt{background:rgba(255,255,255,.1);color:#93a2bd;border-radius:5px;padding:1px 5px;font-size:9px;margin-left:4px}
+#birth input[type=date],#birth input[type=time],#birth input[type=text],#birth textarea{
+  width:100%;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);
+  border-radius:10px;color:#e6edfa;font:500 15px/1.4 inherit;padding:11px 12px;
+  -webkit-appearance:none;appearance:none}
+#birth textarea{resize:vertical;font-size:13px}
+.bnote{font-size:10px;line-height:1.6;color:#7d8ca8;margin-top:6px}
+.bchk{display:flex;align-items:flex-start;gap:8px;margin-top:16px;font-size:12px;color:#c3cee1;line-height:1.5}
+.bchk input{width:20px;height:20px;flex:none;accent-color:#3a63c8;margin-top:1px}
+.brow{display:flex;gap:9px;margin-top:16px}
+.bgo,.bsec{flex:1;border:0;border-radius:12px;padding:14px 8px;font:700 13.5px/1 inherit;cursor:pointer}
+.bgo{background:#3a63c8;color:#fff}
+.bsec{background:rgba(255,255,255,.09);color:#dbe4f5;border:1px solid rgba(255,255,255,.15)}
+.bgo:active,.bsec:active{opacity:.75}
+.bdel{width:100%;margin-top:10px;border:1px solid rgba(255,120,120,.3);background:rgba(255,90,90,.09);
+  color:#f0a8a8;border-radius:11px;padding:11px;font:600 12px/1 inherit;cursor:pointer}
+
+/* ---- 読みシート ---- */
+#readbody{overflow-y:auto;-webkit-overflow-scrolling:touch;
+  padding:0 calc(var(--sar) + 18px) calc(var(--sab) + 26px) calc(var(--sal) + 18px)}
+.rsec{margin-bottom:20px}
+.rsec>h3{font-size:13.5px;font-weight:700;color:#dbe4f5;margin-bottom:9px;
+  padding-bottom:7px;border-bottom:1px solid rgba(255,255,255,.1);
+  display:flex;align-items:baseline;gap:7px}
+.rsec>h3 span{font-size:10px;font-weight:600;color:#7d8ca8}
+.chip{display:inline-block;border-radius:5px;padding:1.5px 6px;font-size:9.5px;font-weight:700;
+  letter-spacing:.04em;vertical-align:1.5px;margin-right:5px;white-space:nowrap}
+.c計算{background:rgba(90,190,150,.2);color:#8fe3bd;border:1px solid rgba(90,190,150,.42)}
+.c伝統{background:rgba(190,160,90,.2);color:#e8cf9a;border:1px solid rgba(190,160,90,.42)}
+.c仮説{background:rgba(120,160,240,.2);color:#b6ccff;border:1px solid rgba(120,160,240,.42)}
+.c確認{background:rgba(120,210,120,.2);color:#a8e8a8;border:1px solid rgba(120,210,120,.42)}
+.c反証{background:rgba(240,120,120,.2);color:#ffb3b3;border:1px solid rgba(240,120,120,.42)}
+.c不能{background:rgba(150,150,165,.18);color:#bcc2d0;border:1px solid rgba(150,150,165,.4)}
+.rlead{background:linear-gradient(140deg,rgba(58,99,200,.26),rgba(120,70,190,.18));
+  border:1px solid rgba(150,180,255,.26);border-radius:14px;padding:13px 15px;margin-bottom:8px}
+.rlead b{display:block;font-size:13.5px;margin-bottom:5px;color:#e9f0ff}
+.rlead p{font-size:11.5px;line-height:1.7;color:#c2cfe6}
+.rrow{display:flex;gap:10px;padding:7px 0;font-size:12px;border-top:1px solid rgba(255,255,255,.055);line-height:1.6}
+.rrow:first-child{border-top:0}
+.rrow>i{font-style:normal;color:#93a2bd;flex:0 0 34%;min-width:0}
+.rrow>b{font-weight:600;flex:1;min-width:0;word-break:break-word}
+.pill{display:flex;gap:6px;overflow-x:auto;padding:4px 0 8px;-webkit-overflow-scrolling:touch}
+.pill>div{flex:none;background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.09);
+  border-radius:11px;padding:9px 12px;text-align:center;min-width:70px}
+.pill>div u{display:block;text-decoration:none;font-size:9.5px;color:#8896b1;margin-bottom:4px}
+.pill>div s{display:block;text-decoration:none;font-size:19px;font-weight:700;letter-spacing:.06em}
+.pill>div em{display:block;font-style:normal;font-size:9px;color:#8896b1;margin-top:4px;line-height:1.45}
+.hyp{border:1px solid rgba(255,255,255,.1);border-radius:13px;padding:13px 14px;margin-bottom:11px;
+  background:rgba(255,255,255,.035)}
+.hyp>h4{font-size:13px;font-weight:700;margin-bottom:8px;line-height:1.5}
+.hyp .f{font-size:11.5px;line-height:1.7;margin-bottom:7px;color:#c2cfe6}
+.hyp .f u{display:block;text-decoration:none;font-size:9.5px;font-weight:700;color:#8896b1;
+  letter-spacing:.05em;margin-bottom:2px}
+.hyp .q{background:rgba(120,160,240,.1);border-left:2px solid rgba(120,160,240,.5);
+  border-radius:0 7px 7px 0;padding:8px 10px;margin:8px 0}
+.stat{display:flex;gap:5px;margin-top:10px;flex-wrap:wrap}
+.stat button{flex:1;min-width:64px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.05);
+  color:#9fb0cd;border-radius:8px;padding:8px 4px;font:600 10.5px/1 inherit;cursor:pointer}
+.stat button.on{background:#3a63c8;border-color:#5f85e0;color:#fff}
+.stat button.on[data-s=contradicted]{background:#a83c3c;border-color:#c85a5a}
+.stat button.on[data-s=supported]{background:#2f7a4a;border-color:#4a9a68}
+.stat button.on[data-s=mixed]{background:#8a6a2a;border-color:#a8863f}
+.warn{background:rgba(255,190,90,.09);border:1px solid rgba(255,190,90,.24);
+  border-radius:10px;padding:11px 13px;font-size:10.5px;line-height:1.7;color:#e6cfa4;margin-bottom:14px}
+.warn b{color:#ffd89a}
+</style>
+</head>
+<body>
+<canvas id="sky"></canvas>
+
+<div id="hud">
+  <div id="clock">—</div>
+  <div id="sub">黄道面の北から見た太陽系<span id="live">現在</span></div>
+</div>
+
+<div id="cbar">
+  <span id="cname">◎ <b>太陽</b>中心</span>
+  <button class="cbtn" id="bInfo">ⓘ</button>
+  <button class="cbtn" id="bCal" hidden>暦</button>
+  <button class="cbtn" id="bBirth">誕生日</button>
+  <button class="cbtn" id="bSun" hidden>☉ 太陽中心へ</button>
+</div>
+
+<div id="birth">
+  <div class="bhead">
+    <div><div class="btitle">生年月日から見る</div>
+      <div class="bsub">その瞬間の惑星配置に移動します</div></div>
+    <button class="xbtn" id="birthClose">&times;</button>
+  </div>
+  <div class="bbody">
+    <label class="bl">生年月日 <span class="req">必須</span></label>
+    <input type="date" id="bDate" value="1990-07-23">
+
+    <label class="bl">出生時刻 <span class="opt">任意</span></label>
+    <input type="time" id="bTime">
+    <p class="bnote">時刻を空欄にすると、時柱・真太陽時・節入り境界の判定は「省略した」と明記して出しません。推測値は作りません。</p>
+
+    <label class="bl">出生地 <span class="opt">任意</span></label>
+    <input type="text" id="bPlace" placeholder="例: 東京都" autocomplete="off">
+
+    <label class="bl">呼称・性別など <span class="opt">任意</span></label>
+    <input type="text" id="bGender" placeholder="自由記述／空欄可" autocomplete="off">
+    <p class="bnote">呼称の選択と、本人が確認する文脈の質問にだけ使います。性格・能力・役割・運勢の算出には使いません。</p>
+
+    <label class="bl">いまの課題・自認する特徴 <span class="opt">任意</span></label>
+    <textarea id="bSelf" rows="3" placeholder="仮説と照らし合わせる材料になります（空欄可）"></textarea>
+
+    <label class="bchk"><input type="checkbox" id="bSave">この端末に入力と検証状態を保存する（既定はオフ）</label>
+    <p class="bnote">入力は端末の外に出ません（このアプリは一切通信しません）。保存はブラウザのローカル領域のみで、下のボタンでいつでも消せます。</p>
+
+    <div class="brow">
+      <button class="bgo" id="bApply">配置を見る</button>
+      <button class="bsec" id="bRead">人物理解を読む</button>
+    </div>
+    <button class="bdel" id="bClear">保存された入力を削除</button>
+  </div>
+</div>
+
+<div id="ctl">
+  <div class="row">
+    <div class="seg">
+      <button id="bComp" class="on">見やすいスケール</button>
+      <button id="bReal">実スケール</button>
+    </div>
+    <button class="btn" id="bNow">今</button>
+  </div>
+  <div id="speedwrap">
+    <div id="speedhead"><span>時間の速さ</span><span id="speedval">実時間 (1x)</span></div>
+    <input type="range" id="speed" min="0" max="9" step="1" value="0">
+  </div>
+</div>
+
+<div id="sheet">
+  <div id="grip"></div>
+  <div id="shead">
+    <div id="swatch"></div>
+    <div><div id="sname"></div><div id="sen"></div></div>
+    <button id="sclose">&times;</button>
+  </div>
+  <div class="facts" id="sfacts"></div>
+  <div id="sdesc"></div>
+  <div id="snote"></div>
+</div>
+
+<div id="cal">
+  <div id="calhead">
+    <div><div id="caltitle">暦</div><div id="caldate">—</div></div>
+    <button id="calclose">&times;</button>
+  </div>
+  <div id="calbody">
+
+    <div id="g50">
+      <div id="g50top">
+        <div id="g50char">—</div>
+        <div id="g50meta">
+          <div id="g50no">50音歴</div>
+          <div id="g50rng">—</div>
+          <div id="g50bar"><div id="g50fill" style="width:0%"></div></div>
+          <div id="g50sub"><span id="g50elapsed">—</span><span id="g50next">—</span></div>
+        </div>
+      </div>
+      <div id="g50note">冬至(太陽黄経270°)を起点に、太陽黄経が7.2°進むごとに次の音へ移る定気法。360÷50＝7.2° なので必ず冬至で一巡して1番目に戻る。</div>
+    </div>
+
+    <details class="sec" open><summary>月齢・月相</summary>
+      <div class="secbody">
+        <div id="moonrow">
+          <canvas id="mooncv" width="120" height="120" style="width:60px;height:60px"></canvas>
+          <div id="moonkv"></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="sec" open><summary>二十四節気・雑節</summary>
+      <div class="secbody" id="sekkibody"></div>
+    </details>
+
+    <details class="sec" open><summary>七十二候<em>本朝七十二候</em></summary>
+      <div class="secbody" id="koubody"></div>
+    </details>
+
+    <details class="sec" open><summary>旧暦<em>太陰太陽暦・定気法</em></summary>
+      <div class="secbody" id="lunarbody"></div>
+    </details>
+
+    <details class="sec"><summary>二十七宿<em>要確認</em></summary>
+      <div class="secbody" id="nakbody"></div>
+    </details>
+
+  </div>
+</div>
+
+<div id="read">
+  <div id="readhead">
+    <div><div id="readtitle">人物理解の仮説</div>
+      <div id="readsub">—</div></div>
+    <button class="xbtn" id="readClose">&times;</button>
+  </div>
+  <div id="readbody"></div>
+</div>
+
+<script>
+'use strict';
+(function () {
+
+/*__CALENDAR_CORE__*/
+
+/*__READING_CONTENT__*/
+
+/*__READING_CORE__*/
+
+/* =====================================================================
+   1. 天体力学 — JPL / E.M.Standish 平均軌道要素による日心黄道座標
+   =====================================================================
+   Standish, "Keplerian Elements for Approximate Positions of the Major
+   Planets" (JPL Solar System Dynamics). 2つの表を持つ:
+     TAB1 : 1800 AD - 2050 AD      (この期間で最も高精度)
+     TAB2 : 3000 BC - 3000 AD      (外惑星に b,c,s,f 補正項が付く)
+   経過ユリウス世紀 T に応じて自動で使い分ける。
+   要素の並び: [a, e, I, L, varpi, Omega,  各々のT係数(/century) , (b,c,s,f)]
+     a     : 軌道長半径 (AU)
+     e     : 離心率
+     I     : 軌道傾斜角 (deg)
+     L     : 平均黄経 (deg)
+     varpi : 近日点黄経 (deg)
+     Omega : 昇交点黄経 (deg)
+   =================================================================== */
+var DEG = Math.PI / 180, PI2 = Math.PI * 2;
+var AU_KM = 149597870.7;
+
+var TAB1 = {
+  Mercury: [0.38709927, 0.20563593, 7.00497902, 252.25032350, 77.45779628, 48.33076593,
+            0.00000037, 0.00001906, -0.00594749, 149472.67411175, 0.16047689, -0.12534081],
+  Venus:   [0.72333566, 0.00677672, 3.39467605, 181.97909950, 131.60246718, 76.67984255,
+            0.00000390, -0.00004107, -0.00078890, 58517.81538729, 0.00268329, -0.27769418],
+  Earth:   [1.00000261, 0.01671123, -0.00001531, 100.46457166, 102.93768193, 0.0,
+            0.00000562, -0.00004392, -0.01294668, 35999.37244981, 0.32327364, 0.0],
+  Mars:    [1.52371034, 0.09339410, 1.84969142, -4.55343205, -23.94362959, 49.55953891,
+            0.00001847, 0.00007882, -0.00813131, 19140.30268499, 0.44441088, -0.29257343],
+  Jupiter: [5.20288700, 0.04838624, 1.30439695, 34.39644051, 14.72847983, 100.47390909,
+            -0.00011607, -0.00013253, -0.00183714, 3034.74612775, 0.21252668, 0.20469106],
+  Saturn:  [9.53667594, 0.05386179, 2.48599187, 49.95424423, 92.59887831, 113.66242448,
+            -0.00125060, -0.00050991, 0.00193609, 1222.49362201, -0.41897216, -0.28867794],
+  Uranus:  [19.18916464, 0.04725744, 0.77263783, 313.23810451, 170.95427630, 74.01692503,
+            -0.00196176, -0.00004397, -0.00242939, 428.48202785, 0.40805281, 0.04240589],
+  Neptune: [30.06992276, 0.00859048, 1.77004347, -55.12002969, 44.96476227, 131.78422574,
+            0.00026291, 0.00005105, 0.00035372, 218.45945325, -0.32241464, -0.00508664]
+};
+
+var TAB2 = {
+  Mercury: [0.38709843, 0.20563661, 7.00559432, 252.25166724, 77.45771895, 48.33961819,
+            0.00000000, 0.00002123, -0.00590158, 149472.67486623, 0.15940013, -0.12214182],
+  Venus:   [0.72332102, 0.00676399, 3.39777545, 181.97970850, 131.76755713, 76.67261496,
+            -0.00000026, -0.00005107, 0.00043494, 58517.81560260, 0.05679648, -0.27274174],
+  Earth:   [1.00000018, 0.01673163, -0.00054346, 100.46691572, 102.93005885, -5.11260389,
+            -0.00000003, -0.00003661, -0.01337178, 35999.37306329, 0.31795260, -0.24123856],
+  Mars:    [1.52371243, 0.09336511, 1.85181869, -4.56813164, -23.91744784, 49.71320984,
+            0.00000097, 0.00009149, -0.00724757, 19140.29934243, 0.45223625, -0.26852431],
+  Jupiter: [5.20248019, 0.04853590, 1.29861416, 34.33479152, 14.27495244, 100.29282654,
+            -0.00002864, 0.00018026, -0.00322699, 3034.90371757, 0.18199196, 0.13024619,
+            -0.00012452, 0.06064060, -0.35635438, 38.35125000],
+  Saturn:  [9.54149883, 0.05550825, 2.49424102, 50.07571329, 92.86136063, 113.63998702,
+            -0.00003065, -0.00032044, 0.00451969, 1222.11494724, 0.54179478, -0.25015002,
+            0.00025899, -0.13434469, 0.87320147, 38.35125000],
+  Uranus:  [19.18797948, 0.04685740, 0.77298127, 314.20276625, 172.43404441, 73.96250215,
+            -0.00020455, -0.00001550, -0.00180155, 428.49512595, 0.09266985, 0.05739699,
+            0.00058331, -0.97731848, 0.17689245, 7.67025000],
+  Neptune: [30.06952752, 0.00895439, 1.77005520, 304.22289287, 46.68158724, 131.78635853,
+            0.00006447, 0.00000818, 0.00022400, 218.46515314, 0.01009938, -0.00606302,
+            -0.00041348, 0.68346318, -0.10162547, 7.67025000]
+};
+
+function norm360(d) { d = d % 360; return d < 0 ? d + 360 : d; }
+
+/* ケプラー方程式  M = E - e*sin(E)  をニュートン法で解く (M,E は rad)。
+   収束判定つき。高離心率でも 5-6 回で 1e-12 rad に収束する。 */
+function solveKepler(Mdeg, e) {
+  var M = (norm360(Mdeg + 180) - 180) * DEG;      // -pi .. +pi に畳む
+  var E = M + e * Math.sin(M);                    // 初期値 (1次近似)
+  var dE = 1, n = 0;
+  while (Math.abs(dE) > 1e-12 && n < 50) {
+    dE = (E - e * Math.sin(E) - M) / (1 - e * Math.cos(E));
+    E -= dE;
+    n++;
+  }
+  if (Math.abs(dE) > 1e-8) {                       // 万一の非収束 → 二分法で確実に解く
+    var lo = M - 1.2, hi = M + 1.2, mid = 0;
+    for (var i = 0; i < 80; i++) {
+      mid = (lo + hi) / 2;
+      if (mid - e * Math.sin(mid) < M) lo = mid; else hi = mid;
+    }
+    E = mid;
+  }
+  return E;
+}
+
+/* T = J2000 からの経過ユリウス世紀 */
+function jdFromMs(ms) { return ms / 86400000 + 2440587.5; }
+function centuriesFromMs(ms) { return (jdFromMs(ms) - 2451545.0) / 36525.0; }
+
+/* TAB1(高精度・1800-2050) と TAB2(長期) の重み。
+   0 = TAB1 のみ / 1 = TAB2 のみ。境界で単純に切り替えると位置が
+   最大 0.1 度ほど飛ぶので、境界の手前 0.08 世紀(約8年)で滑らかに
+   クロスフェードさせ、どの時刻でも連続になるようにしている。 */
+function tabWeight(T) {
+  if (T > 0.42) return Math.min(1, (T - 0.42) / 0.08);
+  if (T < -1.92) return Math.min(1, (-1.92 - T) / 0.08);
+  return 0;
+}
+
+/* 惑星の日心黄道直交座標 (J2000黄道, AU) を返す */
+function stateFromTable(el, T) {
+  var a = el[0] + el[6] * T;
+  var e = el[1] + el[7] * T;
+  var I = el[2] + el[8] * T;
+  var L = el[3] + el[9] * T;
+  var wb = el[4] + el[10] * T;                    // 近日点黄経 varpi
+  var om = el[5] + el[11] * T;                    // 昇交点黄経 Omega
+
+  var M = L - wb;
+  if (el.length > 12) {                           // 木星〜海王星の長周期補正
+    M += el[12] * T * T + el[13] * Math.cos(el[15] * T * DEG) + el[14] * Math.sin(el[15] * T * DEG);
+  }
+  var E = solveKepler(M, e);
+
+  // 軌道面内の座標 (近日点方向を x')
+  var xp = a * (Math.cos(E) - e);
+  var yp = a * Math.sqrt(1 - e * e) * Math.sin(E);
+
+  // 軌道面 → 黄道面 (近日点引数 w = varpi - Omega で回転 → 傾斜 I → 昇交点 Omega)
+  var w = (wb - om) * DEG, O = om * DEG, i = I * DEG;
+  var cw = Math.cos(w), sw = Math.sin(w),
+      cO = Math.cos(O), sO = Math.sin(O),
+      ci = Math.cos(i), si = Math.sin(i);
+  var x = (cw * cO - sw * sO * ci) * xp + (-sw * cO - cw * sO * ci) * yp;
+  var y = (cw * sO + sw * cO * ci) * xp + (-sw * sO + cw * cO * ci) * yp;
+  var z = (sw * si) * xp + (cw * si) * yp;
+
+  return { x: x, y: y, z: z, a: a, e: e, I: I, w: wb, om: om };
+}
+
+function finish(s) {
+  var rxy = Math.sqrt(s.x * s.x + s.y * s.y);
+  s.r = Math.sqrt(rxy * rxy + s.z * s.z);
+  s.lon = norm360(Math.atan2(s.y, s.x) / DEG);
+  s.lat = Math.atan2(s.z, rxy) / DEG;
+  return s;
+}
+
+function planetState(name, T) {
+  var w = tabWeight(T);
+  if (w <= 0) return finish(stateFromTable(TAB1[name], T));
+  if (w >= 1) return finish(stateFromTable(TAB2[name], T));
+  var A = stateFromTable(TAB1[name], T), B = stateFromTable(TAB2[name], T);
+  var t = w * w * (3 - 2 * w);                    // smoothstep
+  return finish({
+    x: A.x + (B.x - A.x) * t, y: A.y + (B.y - A.y) * t, z: A.z + (B.z - A.z) * t,
+    a: A.a + (B.a - A.a) * t, e: A.e + (B.e - A.e) * t, I: A.I + (B.I - A.I) * t,
+    w: A.w, om: A.om
+  });
+}
+
+/* 軌道1周ぶんの (r, lon) サンプル。離心近点角 E を等分して生成するので
+   実スケール・圧縮スケールどちらの写像でも同じ手順で描ける。 */
+function orbitSamples(name, T, n) {
+  var el = (tabWeight(T) >= 0.5 ? TAB2 : TAB1)[name];
+  var a = el[0] + el[6] * T, e = el[1] + el[7] * T, I = el[2] + el[8] * T;
+  var wb = el[4] + el[10] * T, om = el[5] + el[11] * T;
+  var w = (wb - om) * DEG, O = om * DEG, i = I * DEG;
+  var cw = Math.cos(w), sw = Math.sin(w), cO = Math.cos(O), sO = Math.sin(O),
+      ci = Math.cos(i), si = Math.sin(i);
+  var out = new Float64Array(n * 2);
+  for (var k = 0; k < n; k++) {
+    var E = k / n * PI2;
+    var xp = a * (Math.cos(E) - e), yp = a * Math.sqrt(1 - e * e) * Math.sin(E);
+    var x = (cw * cO - sw * sO * ci) * xp + (-sw * cO - cw * sO * ci) * yp;
+    var y = (cw * sO + sw * cO * ci) * xp + (-sw * sO + cw * cO * ci) * yp;
+    out[k * 2] = Math.sqrt(x * x + y * y);        // 黄道面へ投影した動径
+    out[k * 2 + 1] = Math.atan2(y, x);
+  }
+  return out;
+}
+
+/* =====================================================================
+   2. 惑星データ (表示用)
+   =================================================================== */
+var PLANETS = [
+  { key: 'Mercury', ja: '水星', en: 'Mercury', dia: 4879, per: 87.969, rot: '58.6日',
+    tint: '#a89b8c', moons: 0,
+    desc: '太陽に最も近い岩石惑星。大気がほとんどないため昼は約430℃、夜は約−180℃まで下がる。公転88日に対して自転は58.6日で、太陽との潮汐固定により3回自転する間に2回公転する。' },
+  { key: 'Venus', ja: '金星', en: 'Venus', dia: 12104, per: 224.701, rot: '243日(逆行)',
+    tint: '#e6ce9e', moons: 0,
+    desc: '厚い二酸化炭素の大気による暴走温室効果で、表面温度は約465℃。水星より遠いのに太陽系で最も高温の惑星。自転の向きが他の惑星と逆で、地表の気圧は地球の約92倍。' },
+  { key: 'Earth', ja: '地球', en: 'Earth', dia: 12756, per: 365.256, rot: '23時間56分',
+    tint: '#4b86c4', moons: 1,
+    desc: '表面に液体の水と生命を持つ、いまのところ唯一知られた惑星。軌道離心率は0.0167とほぼ円に近く、1月初旬に近日点、7月初旬に遠日点を通る。' },
+  { key: 'Mars', ja: '火星', en: 'Mars', dia: 6792, per: 686.980, rot: '24時間37分',
+    tint: '#c1613a', moons: 2,
+    desc: '地表を覆う酸化鉄のため赤く見える。太陽系最大の火山オリンポス山(高さ約22km)と、長さ4000kmに及ぶマリネリス峡谷を持つ。極冠は水と二酸化炭素の氷。' },
+  { key: 'Jupiter', ja: '木星', en: 'Jupiter', dia: 142984, per: 4332.589, rot: '9時間56分',
+    tint: '#d8b48a', moons: 95,
+    desc: '太陽系最大の惑星で、他の全惑星を合わせた質量の2.5倍。縞模様は上昇するゾーン(明)と下降するベルト(暗)。大赤斑は地球より大きい高気圧性の渦で、少なくとも190年以上続いている。' },
+  { key: 'Saturn', ja: '土星', en: 'Saturn', dia: 120536, per: 10759.22, rot: '10時間33分',
+    tint: '#e3ce9c', moons: 146,
+    desc: '主に水の氷の粒(数cm〜数m)でできた壮大な環を持つ。環の厚さは平均でわずか10m程度。平均密度は0.69 g/cm³で、水より軽い唯一の惑星。' },
+  { key: 'Uranus', ja: '天王星', en: 'Uranus', dia: 51118, per: 30685.4, rot: '17時間14分(逆行)',
+    tint: '#9fd6de', moons: 28,
+    desc: '自転軸が98度傾いており、ほぼ横倒しのまま公転する。大気中のメタンが赤い光を吸収するため青緑色に見える。1781年にウィリアム・ハーシェルが望遠鏡で発見した最初の惑星。' },
+  { key: 'Neptune', ja: '海王星', en: 'Neptune', dia: 49528, per: 60189.0, rot: '16時間06分',
+    tint: '#4a7fd4', moons: 16,
+    desc: '太陽系最も外側の惑星。秒速600mに達する太陽系最速の風が吹く。天王星の軌道のずれから位置が計算で予測され、1846年にその予報位置で発見された。' }
+];
+var PMAP = {}; for (var pi = 0; pi < PLANETS.length; pi++) PMAP[PLANETS[pi].key] = PLANETS[pi];
+
+var SUN = { key: 'Sun', ja: '太陽', en: 'Sun', dia: 1391400, tint: '#ffd98a',
+  desc: '太陽系の全質量の99.86%を占めるG型主系列星。中心部は約1500万Kで、毎秒6億トンの水素をヘリウムに変換している。表面(光球)の温度は約5772K。' };
+
+/* =====================================================================
+   3. プロシージャル惑星テクスチャ (外部画像を一切使わない)
+   =================================================================== */
+function hash2(ix, iy, s) {
+  var n = Math.imul(ix, 374761393) + Math.imul(iy, 668265263) + Math.imul(s, 1013904223);
+  n = Math.imul(n ^ (n >>> 13), 1274126177);
+  return ((n ^ (n >>> 16)) >>> 0) / 4294967296;
+}
+function vnoise(x, y, s) {
+  var ix = Math.floor(x), iy = Math.floor(y), fx = x - ix, fy = y - iy;
+  fx = fx * fx * (3 - 2 * fx); fy = fy * fy * (3 - 2 * fy);
+  var a = hash2(ix, iy, s), b = hash2(ix + 1, iy, s), c = hash2(ix, iy + 1, s), d = hash2(ix + 1, iy + 1, s);
+  return (a + (b - a) * fx) * (1 - fy) + (c + (d - c) * fx) * fy;
+}
+function fbm(x, y, oct, s) {
+  var v = 0, amp = 0.5, f = 1, nm = 0;
+  for (var i = 0; i < oct; i++) { v += amp * vnoise(x * f, y * f, s + i * 131); nm += amp; amp *= 0.5; f *= 2; }
+  return v / nm;
+}
+function mix(c1, c2, t) {
+  t = t < 0 ? 0 : t > 1 ? 1 : t;
+  return [c1[0] + (c2[0] - c1[0]) * t, c1[1] + (c2[1] - c1[1]) * t, c1[2] + (c2[2] - c1[2]) * t];
+}
+function scal(c, k) { return [c[0] * k, c[1] * k, c[2] * k]; }
+function sstep(t) { t = t < 0 ? 0 : t > 1 ? 1 : t; return t * t * (3 - 2 * t); }
+
+/* 球面にテクスチャを貼ってスプライト canvas を焼く。
+   lat/lon から色を返す shader を渡す。周縁減光は共通で掛ける。 */
+function bakeSprite(size, shader) {
+  var cv = document.createElement('canvas'); cv.width = cv.height = size;
+  var g = cv.getContext('2d'), img = g.createImageData(size, size), D = img.data, R = size / 2;
+  for (var j = 0; j < size; j++) {
+    for (var i = 0; i < size; i++) {
+      var nx = (i + 0.5 - R) / R, ny = (j + 0.5 - R) / R, d2 = nx * nx + ny * ny, o = (j * size + i) * 4;
+      if (d2 >= 1) { D[o + 3] = 0; continue; }
+      var nz = Math.sqrt(1 - d2);
+      var lat = Math.asin(ny > 1 ? 1 : ny < -1 ? -1 : ny);   // 画面上が北
+      var lon = Math.atan2(nx, nz);
+      var c = shader(-lat, lon, nz);
+      var lb = 0.60 + 0.40 * Math.pow(nz, 0.5);              // 周縁減光
+      var r0 = c[0] * lb, g0 = c[1] * lb, b0 = c[2] * lb;
+      D[o] = r0 > 255 ? 255 : r0 < 0 ? 0 : r0;
+      D[o + 1] = g0 > 255 ? 255 : g0 < 0 ? 0 : g0;
+      D[o + 2] = b0 > 255 ? 255 : b0 < 0 ? 0 : b0;
+      var edge = (R - Math.sqrt(d2) * R);                    // 縁のアンチエイリアス
+      D[o + 3] = 255 * (edge > 1 ? 1 : edge < 0 ? 0 : edge);
+    }
+  }
+  g.putImageData(img, 0, 0);
+  return cv;
+}
+
+var SHADERS = {
+  Mercury: function (lat, lon) {
+    var n = fbm(lon * 3.1 + 4, lat * 3.1, 5, 11);
+    var c = mix([104, 98, 92], [172, 163, 152], n);
+    var m = fbm(lon * 1.4, lat * 1.7, 4, 37);
+    if (m < 0.44) c = mix(c, [78, 73, 70], (0.44 - m) * 2.6);
+    var cr = fbm(lon * 14, lat * 14, 3, 61);
+    return scal(c, 0.86 + 0.30 * cr);
+  },
+  Venus: function (lat, lon) {
+    var n = fbm(lon * 1.9 + 2, lat * 4.6, 5, 7);
+    var c = mix([206, 168, 112], [250, 236, 200], n);
+    var s = fbm(lon * 3.4, lat * 1.6, 4, 23);
+    c = mix(c, [236, 214, 168], (s - 0.5) * 0.8 + 0.5);
+    return scal(c, 0.95 + 0.10 * fbm(lon * 9, lat * 9, 2, 71));
+  },
+  Earth: function (lat, lon) {
+    var land = fbm(lon * 1.75 + 3, lat * 2.45, 6, 3);
+    var c;
+    if (land > 0.505) {
+      var t = (land - 0.505) * 4.2;
+      c = mix([44, 92, 52], [136, 118, 70], sstep(t));
+      if (land > 0.665) c = mix(c, [162, 150, 122], (land - 0.665) * 4.0);
+    } else {
+      c = mix([8, 34, 82], [24, 84, 148], sstep((land - 0.30) * 2.6));
+    }
+    var al = Math.abs(lat);
+    if (al > 1.14) c = mix(c, [238, 244, 252], sstep((al - 1.14) / 0.36));
+    var cl = fbm(lon * 2.9 + 12, lat * 3.4, 5, 19);
+    if (cl > 0.515) c = mix(c, [246, 249, 253], sstep((cl - 0.515) * 3.4) * 0.92);
+    return c;
+  },
+  Mars: function (lat, lon) {
+    var n = fbm(lon * 2.3 + 1, lat * 2.9, 6, 5);
+    var c = mix([146, 66, 36], [212, 128, 78], n);
+    var d = fbm(lon * 1.35 + 8, lat * 1.7, 4, 43);
+    if (d < 0.455) c = mix(c, [104, 56, 42], (0.455 - d) * 2.6);
+    var al = Math.abs(lat);
+    if (al > 1.30) c = mix(c, [238, 240, 244], sstep((al - 1.30) / 0.22));
+    return scal(c, 0.90 + 0.20 * fbm(lon * 7, lat * 7, 3, 67));
+  },
+  Jupiter: function (lat, lon) {
+    var turb = (fbm(lon * 0.95, lat * 6.5, 5, 29) - 0.5) * 0.52;
+    var b = Math.sin((lat + turb * 0.85) * 10.2);
+    var c = mix([172, 120, 82], [238, 226, 202], sstep(b * 0.5 + 0.5));
+    var b2 = Math.sin((lat + turb) * 21.0);
+    c = mix(c, scal(c, 0.90), sstep(b2 * 0.5 + 0.5) * 0.35);
+    var al = Math.abs(lat);
+    if (al > 1.02) c = mix(c, [152, 140, 128], sstep((al - 1.02) / 0.42));
+    // 大赤斑
+    var dl = lon + 0.62, dla = lat + 0.34;
+    var q = (dl / 0.40) * (dl / 0.40) + (dla / 0.135) * (dla / 0.135);
+    if (q < 1) c = mix(c, [198, 96, 62], Math.pow(1 - q, 0.45) * 0.92);
+    // 白斑
+    var dl2 = lon - 0.75, dla2 = lat + 0.60;
+    var q2 = (dl2 / 0.16) * (dl2 / 0.16) + (dla2 / 0.075) * (dla2 / 0.075);
+    if (q2 < 1) c = mix(c, [246, 242, 232], Math.pow(1 - q2, 0.5) * 0.75);
+    return c;
+  },
+  Saturn: function (lat, lon) {
+    var turb = (fbm(lon * 0.9, lat * 5.6, 4, 31) - 0.5) * 0.42;
+    var b = Math.sin((lat + turb * 0.8) * 8.2);
+    var c = mix([202, 172, 122], [244, 230, 190], sstep(b * 0.5 + 0.5));
+    var al = Math.abs(lat);
+    if (al > 1.05) c = mix(c, [176, 172, 164], sstep((al - 1.05) / 0.40));
+    return c;
+  },
+  Uranus: function (lat, lon) {
+    var b = Math.sin(lat * 5.5 + (fbm(lon * 1.1, lat * 2.8, 3, 41) - 0.5) * 0.55);
+    var c = mix([143, 200, 208], [180, 226, 230], b * 0.5 + 0.5);
+    return scal(c, 0.98 + 0.04 * fbm(lon * 6, lat * 6, 2, 83));
+  },
+  Neptune: function (lat, lon) {
+    var b = Math.sin(lat * 5.0 + (fbm(lon * 1.2, lat * 2.6, 4, 47) - 0.5) * 0.85);
+    var c = mix([40, 78, 168], [78, 130, 218], b * 0.5 + 0.5);
+    var dl = lon - 0.42, dla = lat + 0.40;
+    var q = (dl / 0.26) * (dl / 0.26) + (dla / 0.12) * (dla / 0.12);
+    if (q < 1) c = mix(c, [22, 46, 112], Math.pow(1 - q, 0.5) * 0.85);
+    var s = fbm(lon * 2.6, lat * 8, 3, 53);
+    if (s > 0.63) c = mix(c, [222, 234, 250], (s - 0.63) * 2.4);
+    return c;
+  },
+  Sun: function (lat, lon, nz) {
+    var g = fbm(lon * 8, lat * 8, 5, 97);
+    var c = mix([255, 168, 48], [255, 252, 232], 0.40 + g * 0.85);
+    return scal(c, 0.85 + 0.35 * nz);
+  }
+};
+
+var SPRITES = {};
+function buildSprites() {
+  for (var i = 0; i < PLANETS.length; i++) {
+    var k = PLANETS[i].key;
+    SPRITES[k] = bakeSprite(k === 'Jupiter' || k === 'Saturn' || k === 'Earth' ? 176 : 144, SHADERS[k]);
+  }
+  SPRITES.Sun = bakeSprite(160, SHADERS.Sun);
+}
+
+/* =====================================================================
+   4. ビュー状態
+   =================================================================== */
+var cv = document.getElementById('sky'), ctx = cv.getContext('2d', { alpha: false });
+var VW = 0, VH = 0, DPR = 1, CX = 0, CY = 0, BASE = 200;
+
+/* blend 1=見やすい 0=実スケール / cmix 中心天体の切替補間 / amax 縮尺の正規化基準(AU) */
+var view = { blend: 1, zoom: 1, panX: 0, panY: 0, cmix: 1, amax: 30.6 };
+var tweens = [];
+function tweenTo(key, to, dur) {
+  for (var i = tweens.length - 1; i >= 0; i--) if (tweens[i].k === key) tweens.splice(i, 1);
+  tweens.push({ k: key, from: view[key], to: to, t0: performance.now(), d: dur || 800 });
+}
+function killTweens(keys) {
+  for (var i = tweens.length - 1; i >= 0; i--) if (keys.indexOf(tweens[i].k) >= 0) tweens.splice(i, 1);
+}
+function stepTweens(now) {
+  for (var i = tweens.length - 1; i >= 0; i--) {
+    var t = tweens[i], p = (now - t.t0) / t.d;
+    if (p >= 1) { view[t.k] = t.to; tweens.splice(i, 1); continue; }
+    var e = p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;   // easeInOutCubic
+    view[t.k] = t.from + (t.to - t.from) * e;
+  }
+}
+
+var C_R0 = 0.16;               // 対数圧縮の柔らかさ (小さいほど内惑星が広がる)
+var C_DEN = Math.log(1 + 30.6 / C_R0);
+
+/* 中心天体からの距離 r[AU] → 画面上の距離[px] (ズーム前)
+   実スケール : r に比例
+   圧縮スケール: ln(1 + r/r0) の対数圧縮。8惑星が1画面に収まりつつ
+                 内惑星どうしの間隔も潰れないよう r0 を選んである。
+   両者を view.blend で線形補間するので、切替は連続的に補間される。
+   view.amax は中心天体ごとの最大距離。中心を変えると滑らかに変わる。 */
+function mapR(r) {
+  var real = r / view.amax;
+  var comp = Math.log(1 + r / C_R0) / C_DEN;
+  return (real + (comp - real) * view.blend) * BASE;
+}
+/* その中心天体で想定される最大距離（自分の遠日点 + 海王星の遠日点） */
+function amaxFor(key) { return key === 'Sun' ? 30.6 : 30.4 + APH[key]; }
+var APH = { Mercury: 0.467, Venus: 0.728, Earth: 1.017, Mars: 1.666,
+            Jupiter: 5.455, Saturn: 10.05, Uranus: 20.10, Neptune: 30.33 };
+
+/* J2000 黄経 → その日の分点の黄経（一般歳差）。星座帯・暦の表示に使う。 */
+function precDeg(T) { return 1.396971 * T + 0.0003086 * T * T; }
+
+/* =====================================================================
+   5. 時刻
+   =================================================================== */
+var SPEEDS = [
+  { v: 1,          l: '実時間 (1x)' },
+  { v: 60,         l: '1分 / 秒' },
+  { v: 600,        l: '10分 / 秒' },
+  { v: 3600,       l: '1時間 / 秒' },
+  { v: 43200,      l: '半日 / 秒' },
+  { v: 86400,      l: '1日 / 秒' },
+  { v: 604800,     l: '1週間 / 秒' },
+  { v: 2629800,    l: '1か月 / 秒' },
+  { v: 31557600,   l: '1年 / 秒' },
+  { v: 315576000,  l: '10年 / 秒' }
+];
+/* 時刻モデル: simMs = 端末時計 + offsetMs。
+   1x のときは offsetMs を動かさないので、タブが裏に回っても実時刻から
+   ずれない(rAF が止まっても復帰した瞬間に正しい現在時刻に戻る)。
+   倍速時は超過ぶん (speed-1) だけ offsetMs を積算する。 */
+var speedIdx = 0, offsetMs = 0, simMs = Date.now(), lastReal = performance.now();
+
+/* 誕生時ロック: pinnedMs が非 null の間は端末時計を追いかけない。
+   1倍速ならその瞬間で止まり、倍速にすればそこから動き出す。
+   「今」ボタンで解除する。 */
+var pinnedMs = null;
+
+/* =====================================================================
+   6. 星空 (オフスクリーンに1回だけ焼く)
+   =================================================================== */
+var starCv = null;
+function buildStars() {
+  var w = Math.ceil(VW * 1.25), h = Math.ceil(VH * 1.25);
+  starCv = document.createElement('canvas');
+  starCv.width = Math.ceil(w * DPR); starCv.height = Math.ceil(h * DPR);
+  var g = starCv.getContext('2d');
+  g.setTransform(DPR, 0, 0, DPR, 0, 0);
+  g.fillStyle = '#05060c'; g.fillRect(0, 0, w, h);
+  // 天の川風のかすかな帯
+  var band = g.createLinearGradient(0, h * 0.18, w, h * 0.82);
+  band.addColorStop(0, 'rgba(60,74,124,0)');
+  band.addColorStop(0.45, 'rgba(62,78,132,0.09)');
+  band.addColorStop(0.55, 'rgba(66,82,138,0.09)');
+  band.addColorStop(1, 'rgba(60,74,124,0)');
+  g.fillStyle = band; g.fillRect(0, 0, w, h);
+  var s = 987654321;
+  function rnd() { s = (Math.imul(s, 1103515245) + 12345) & 0x7fffffff; return s / 0x7fffffff; }
+  var n = Math.round(w * h / 1400);
+  for (var i = 0; i < n; i++) {
+    var x = rnd() * w, y = rnd() * h, m = rnd();
+    var r = 0.35 + m * m * m * 1.5, a = 0.18 + m * 0.72;
+    var tone = rnd();
+    g.fillStyle = tone > 0.9 ? 'rgba(198,214,255,' + a + ')'
+                : tone < 0.12 ? 'rgba(255,224,196,' + a + ')'
+                : 'rgba(238,244,255,' + a + ')';
+    g.beginPath(); g.arc(x, y, r, 0, PI2); g.fill();
+  }
+  g.setTransform(1, 0, 0, 1, 0, 0);
+}
+
+/* =====================================================================
+   7. レイアウト
+   =================================================================== */
+function resize() {
+  VW = window.innerWidth; VH = window.innerHeight;
+  DPR = Math.min(window.devicePixelRatio || 1, 3);
+  cv.width = Math.round(VW * DPR); cv.height = Math.round(VH * DPR);
+  cv.style.width = VW + 'px'; cv.style.height = VH + 'px';
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  CX = VW / 2; CY = VH * 0.46;
+  BASE = Math.min(VW, VH * 0.86) * 0.40;
+  buildStars();
+}
+
+/* =====================================================================
+   8. 描画
+   =================================================================== */
+var ORB = {}, orbT = -1e9, ORB_N = 260;
+function refreshOrbits(T) {
+  if (Math.abs(T - orbT) < 0.004) return;         // 0.4世紀ぶん変わるまで再計算不要
+  orbT = T;
+  for (var i = 0; i < PLANETS.length; i++) ORB[PLANETS[i].key] = orbitSamples(PLANETS[i].key, T, ORB_N);
+}
+
+/* 惑星の表示半径 [px]。実サイズ比だと画面上で見えないので、
+   (直径比)^0.34 に圧縮している ＝ 図中の大きさは実比率ではない。 */
+function dispSize(dia) {
+  var k = Math.pow(dia / 12756, 0.34) * 5.9;
+  return k * Math.max(0.85, Math.min(2.2, Math.pow(view.zoom, 0.30)));
+}
+
+var RING_TILT = 0.46, RING_ROT = -0.20;
+function drawRing(x, y, s, half) {
+  ctx.save();
+  ctx.translate(x, y); ctx.rotate(RING_ROT);
+  if (half) {
+    var R = s * 4;
+    ctx.beginPath();
+    if (half === 1) ctx.rect(-R, -R, 2 * R, R); else ctx.rect(-R, 0, 2 * R, R);
+    ctx.clip();
+  }
+  ctx.scale(1, RING_TILT);
+  var bands = [
+    [1.22, 1.51, 'rgba(178,158,120,0.50)'],   // C環
+    [1.53, 1.94, 'rgba(232,214,176,0.86)'],   // B環
+    [1.94, 2.01, 'rgba(120,108,86,0.22)'],    // カッシーニの間隙
+    [2.01, 2.30, 'rgba(206,188,150,0.62)']    // A環
+  ];
+  for (var i = 0; i < bands.length; i++) {
+    ctx.beginPath();
+    ctx.arc(0, 0, s * bands[i][1], 0, PI2);
+    ctx.arc(0, 0, s * bands[i][0], 0, PI2, true);
+    ctx.fillStyle = bands[i][2];
+    ctx.fill('evenodd');
+  }
+  ctx.restore();
+}
+
+var GLOWY = { Earth: 'rgba(120,180,255,', Venus: 'rgba(255,226,170,', Mars: 'rgba(255,150,110,',
+  Uranus: 'rgba(150,225,235,', Neptune: 'rgba(110,160,255,', Jupiter: 'rgba(240,215,180,',
+  Saturn: 'rgba(240,225,180,', Mercury: 'rgba(190,180,170,' };
+
+var selected = null, state = {}, T_now = 0;
+
+/* =====================================================================
+   8b. 中心天体の切替
+   -------------------------------------------------------------------
+   見せ方は「黄道面を真上から見た図のまま、原点を平行移動する」方式。
+   日心座標から中心天体の日心座標を引くだけなので、幾何は歪まない。
+   切替中は 旧中心 → 新中心 の位置ベクトルを補間するので、
+   図全体がなめらかに流れて移動する（瞬間移動しない）。
+   ===================================================================== */
+var centerKey = 'Sun', centerPrev = 'Sun', originFrom = null;
+var ORG = { x: 0, y: 0, z: 0 };
+
+function bodyPos(key, T) {
+  if (key === 'Sun') return { x: 0, y: 0, z: 0 };
+  return state[key] || planetState(key, T);
+}
+function updateOrigin(T) {
+  var a = originFrom || bodyPos(centerPrev, T), b = bodyPos(centerKey, T), t = view.cmix;
+  ORG.x = a.x + (b.x - a.x) * t;
+  ORG.y = a.y + (b.y - a.y) * t;
+  ORG.z = a.z + (b.z - a.z) * t;
+}
+/* 中心が太陽からどれだけ離れているか（0=太陽中心, 1=惑星中心）。
+   日心軌道の楕円の濃さや黄道帯リングの出現に使う。 */
+function offSunAmount() {
+  var a = centerPrev === 'Sun' ? 0 : 1, b = centerKey === 'Sun' ? 0 : 1;
+  return a + (b - a) * view.cmix;
+}
+function setCenter(key) {
+  if (key === centerKey) return;
+  // 補間の途中でもう一度切り替えたときは、いまの見かけの原点を出発点に固定する
+  // （そうしないと原点が旧中心へ跳ね返ってから動き出してしまう）
+  originFrom = view.cmix < 1 ? { x: ORG.x, y: ORG.y, z: ORG.z } : null;
+  centerPrev = centerKey;
+  centerKey = key;
+  view.cmix = 0;
+  killTweens(['cmix', 'amax', 'zoom', 'panX', 'panY']);
+  tweenTo('cmix', 1, 950);
+  tweenTo('amax', amaxFor(key), 950);
+  tweenTo('zoom', 1, 950); tweenTo('panX', 0, 950); tweenTo('panY', 0, 950);
+  trailStamp = -1e9;                       // 軌跡を組み直す
+  syncCenterBar();
+}
+
+/* =====================================================================
+   8c. 見かけの軌跡（中心天体から見た各天体の通り道）
+   -------------------------------------------------------------------
+   地球中心にすると、ここに火星や木星の逆行のループが現れる。
+   前後 TRAIL_SPAN 日を TRAIL_STEP 日刻みでサンプリングし、
+   中心天体からの相対位置 (r, 黄経) として持っておく。
+   ===================================================================== */
+var TRAIL_SPAN = 190, TRAIL_STEP = 2.6;
+var TRAIL_N = Math.floor(TRAIL_SPAN * 2 / TRAIL_STEP) + 1;
+var TRAIL_KEYS = ['Sun', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune'];
+var trails = {}, trailStamp = -1e9, trailWall = -1e9, trailCenter = '';
+
+function rebuildTrails(ms) {
+  var ck = centerKey, i, k, s;
+  for (i = 0; i < TRAIL_KEYS.length; i++) {
+    k = TRAIL_KEYS[i];
+    if (k === ck) { trails[k] = null; continue; }
+    trails[k] = new Float32Array(TRAIL_N * 2);
+  }
+  for (var j = 0; j < TRAIL_N; j++) {
+    var t = ms + (j * TRAIL_STEP - TRAIL_SPAN) * 86400000;
+    var T = centuriesFromMs(t);
+    var C = ck === 'Sun' ? { x: 0, y: 0 } : planetState(ck, T);
+    for (i = 0; i < TRAIL_KEYS.length; i++) {
+      k = TRAIL_KEYS[i];
+      if (k === ck) continue;
+      s = k === 'Sun' ? { x: 0, y: 0 } : planetState(k, T);
+      var dx = s.x - C.x, dy = s.y - C.y;
+      trails[k][j * 2] = Math.sqrt(dx * dx + dy * dy);
+      trails[k][j * 2 + 1] = Math.atan2(dy, dx);
+    }
+  }
+  trailStamp = ms; trailCenter = ck;
+}
+
+/* =====================================================================
+   8d. 月（地球中心のときだけ描く）
+   -------------------------------------------------------------------
+   位置は Meeus 第47章の簡略月理論（CAL.moonPosition）。
+   軌道半径が桁違いに小さいので、画面上は固定半径まで拡大して描く。
+   拡大していることは画面と暦パネルの両方に明示する。
+   ===================================================================== */
+function moonScreenRadius() {
+  return Math.max(30, Math.min(74, 40 * Math.pow(view.zoom, 0.28))) ;
+}
+/* 月相を描く。k=輝面比, chi=輝いている側の向き(画面座標のラジアン) */
+function drawMoonDisc(g, x, y, R, k, chi, lit, dark) {
+  g.save();
+  g.translate(x, y); g.rotate(chi);
+  g.beginPath(); g.arc(0, 0, R, 0, PI2);
+  g.fillStyle = dark; g.fill();
+  var a = R * (2 * k - 1);
+  g.beginPath();
+  g.arc(0, 0, R, -Math.PI / 2, Math.PI / 2, false);          // 太陽側の半円
+  g.ellipse(0, 0, Math.abs(a), R, 0, Math.PI / 2, -Math.PI / 2, a <= 0);
+  g.closePath();
+  g.fillStyle = lit; g.fill();
+  g.restore();
+}
+
+var moonInfo = { lon: 0, lat: 0, dist: 0, illum: 0, x: 0, y: 0, s: 0, exag: 1 };
+function drawMoon(SX, SY, sunX, sunY, prec, labels) {
+  var jd = CAL.msToJd(simMs);
+  var mp = CAL.moonPosition(jd);
+  var el = CAL.norm360(mp.lon - CAL.sunApparentLongitude(jd));
+  var k = (1 - Math.cos(el * DEG)) / 2;
+  var ang = (mp.lon - prec) * DEG;                 // 図はJ2000基準なので歳差ぶん戻す
+  var RR = moonScreenRadius() * Math.min(1, (view.cmix - 0.25) / 0.5);
+  var X = SX + RR * Math.cos(ang), Y = SY - RR * Math.sin(ang);
+  var s = 5.4 * Math.max(0.85, Math.min(2.2, Math.pow(view.zoom, 0.3)));
+
+  // 月の軌道（誇張した円）
+  ctx.save();
+  ctx.strokeStyle = 'rgba(190,205,235,0.22)'; ctx.lineWidth = 1; ctx.setLineDash([2, 5]);
+  ctx.beginPath(); ctx.arc(SX, SY, RR, 0, PI2); ctx.stroke();
+  ctx.restore();
+
+  var chi = Math.atan2(sunY - Y, sunX - X);
+  drawMoonDisc(ctx, X, Y, s, k, chi, '#e8e6df', '#22242e');
+  ctx.save();
+  ctx.strokeStyle = 'rgba(210,215,230,0.35)'; ctx.lineWidth = 0.8;
+  ctx.beginPath(); ctx.arc(X, Y, s, 0, PI2); ctx.stroke();
+  ctx.restore();
+
+  moonInfo.lon = mp.lon; moonInfo.lat = mp.lat; moonInfo.dist = mp.dist;
+  moonInfo.illum = k; moonInfo.x = X; moonInfo.y = Y; moonInfo.s = s;
+  var trueR = mapR(mp.dist / AU_KM) * view.zoom;
+  moonInfo.exag = trueR > 0.0001 ? RR / trueR : 0;
+  if (RR > 20) labels.push(['月', X, Y, s, false, false]);
+}
+
+/* =====================================================================
+   8e. 黄道帯リング（中心天体から見た黄経の目盛り）
+   ===================================================================== */
+var SIGNS = ['牡羊','牡牛','双子','蟹','獅子','乙女','天秤','蠍','射手','山羊','水瓶','魚'];
+var SCX = 0, SCY = 0;
+function ringRadius() { return Math.min(VW, VH * 0.86) * 0.455; }
+
+function drawZodiacRing(SX, SY, alpha, prec) {
+  var R = ringRadius(), i, a;
+  ctx.save();
+  ctx.globalAlpha = alpha;
+
+  ctx.strokeStyle = 'rgba(150,180,240,0.30)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.arc(SX, SY, R, 0, PI2); ctx.stroke();
+  ctx.beginPath(); ctx.arc(SX, SY, R - 15, 0, PI2);
+  ctx.strokeStyle = 'rgba(150,180,240,0.16)'; ctx.stroke();
+
+  // 5度ごとの細目盛、10度で中、30度(星座境界)で長い目盛り
+  for (i = 0; i < 72; i++) {
+    var lonDate = i * 5;
+    a = (lonDate - prec) * DEG;
+    var big = (i % 6 === 0), mid = (i % 2 === 0);
+    var L = big ? 15 : mid ? 8 : 4.5;
+    var ca = Math.cos(a), sa = Math.sin(a);
+    ctx.beginPath();
+    ctx.moveTo(SX + (R - L) * ca, SY - (R - L) * sa);
+    ctx.lineTo(SX + R * ca, SY - R * sa);
+    ctx.strokeStyle = big ? 'rgba(175,200,250,0.65)' : 'rgba(150,180,240,0.32)';
+    ctx.lineWidth = big ? 1.3 : 1;
+    ctx.stroke();
+  }
+  // 星座名と度数
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  for (i = 0; i < 12; i++) {
+    a = (i * 30 + 15 - prec) * DEG;
+    var rx = SX + (R - 7.5) * Math.cos(a), ry = SY - (R - 7.5) * Math.sin(a);
+    ctx.font = '700 9.5px -apple-system,"Hiragino Sans",sans-serif';
+    ctx.fillStyle = 'rgba(196,214,250,0.88)';
+    ctx.fillText(SIGNS[i], rx, ry);
+    var a2 = (i * 30 - prec) * DEG;
+    ctx.font = '600 8px -apple-system,sans-serif';
+    ctx.fillStyle = 'rgba(150,175,225,0.62)';
+    ctx.fillText(i * 30 + '°', SX + (R + 9) * Math.cos(a2), SY - (R + 9) * Math.sin(a2));
+  }
+  ctx.restore();
+}
+
+/* 中心天体から見た各天体の方向を、リング上まで細い線で結ぶ */
+function drawPointers(SX, SY, alpha, bodies) {
+  var R = ringRadius();
+  ctx.save();
+  ctx.globalAlpha = alpha * 0.75;
+  for (var i = 0; i < bodies.length; i++) {
+    var b = bodies[i];
+    var a = Math.atan2(SY - b.y, b.x - SX);
+    var d = Math.hypot(b.x - SX, b.y - SY);
+    if (d < 3) continue;
+    var ca = Math.cos(a), sa = Math.sin(a);
+    ctx.beginPath();
+    ctx.moveTo(SX + (d + b.s + 3) * ca, SY - (d + b.s + 3) * sa);
+    ctx.lineTo(SX + (R - 16) * ca, SY - (R - 16) * sa);
+    ctx.strokeStyle = b.col || 'rgba(160,190,245,0.30)';
+    ctx.lineWidth = 0.9;
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(SX + (R - 15) * ca, SY - (R - 15) * sa);
+    ctx.lineTo(SX + R * ca, SY - R * sa);
+    ctx.strokeStyle = b.mark || 'rgba(210,228,255,0.85)';
+    ctx.lineWidth = 2.2;
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+/* 見かけの軌跡を描く */
+function drawTrails(SX, SY, alpha) {
+  var i, j, k, tr;
+  ctx.save();
+  for (i = 0; i < TRAIL_KEYS.length; i++) {
+    k = TRAIL_KEYS[i];
+    tr = trails[k];
+    if (!tr) continue;
+    var col = k === 'Sun' ? '255,206,110' : TRAIL_COL[k] || '150,180,240';
+    ctx.beginPath();
+    for (j = 0; j < TRAIL_N; j++) {
+      var rr = mapR(tr[j * 2]) * view.zoom, aa = tr[j * 2 + 1];
+      var X = SX + rr * Math.cos(aa), Y = SY - rr * Math.sin(aa);
+      if (j === 0) ctx.moveTo(X, Y); else ctx.lineTo(X, Y);
+    }
+    ctx.strokeStyle = 'rgba(' + col + ',' + (0.42 * alpha) + ')';
+    ctx.lineWidth = k === 'Sun' ? 1.6 : 1.3;
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+var TRAIL_COL = { Mercury: '190,180,170', Venus: '240,215,165', Mars: '230,130,90',
+                  Jupiter: '225,195,155', Saturn: '235,215,165',
+                  Uranus: '150,215,225', Neptune: '110,150,230' };
+
+function draw(now) {
+  // iOS の URL バー開閉・回転・分割表示など resize イベントが来ない
+  // ケースがあるので、毎フレーム実寸を確認して食い違えば組み直す。
+  if (window.innerWidth !== VW || window.innerHeight !== VH) resize();
+  stepTweens(now);
+
+  // ---- 時刻を進める ----
+  var dtReal = Math.min(now - lastReal, 200); lastReal = now;
+  var sp = SPEEDS[speedIdx].v;
+  if (pinnedMs !== null) {
+    if (sp !== 1) pinnedMs += dtReal * sp;      // 誕生時から動かすときだけ進む
+    simMs = pinnedMs;
+  } else {
+    if (sp !== 1) offsetMs += dtReal * (sp - 1);
+    simMs = Date.now() + offsetMs;
+  }
+  var T = centuriesFromMs(simMs);
+  T_now = T;
+  refreshOrbits(T);
+  for (var i = 0; i < PLANETS.length; i++) state[PLANETS[i].key] = planetState(PLANETS[i].key, T);
+  updateOrigin(T);
+  var offSun = offSunAmount();
+
+  // ---- 見かけの軌跡を必要なら組み直す（重いので実時間で間引く）----
+  if (centerKey !== trailCenter || Math.abs(simMs - trailStamp) > 0.3 * 86400000) {
+    if (now - trailWall > 110) { trailWall = now; rebuildTrails(simMs); }
+  }
+
+  // ---- 背景 ----
+  var px = Math.max(-VW * 0.12, Math.min(VW * 0.12, view.panX * 0.03));
+  var py = Math.max(-VH * 0.12, Math.min(VH * 0.12, view.panY * 0.03));
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.drawImage(starCv, Math.round((-VW * 0.125 + px) * DPR), Math.round((-VH * 0.125 + py) * DPR));
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+
+  var SX = CX + view.panX, SY = CY + view.panY;
+  SCX = SX; SCY = SY;
+  var prec = precDeg(T);
+
+  // ---- 黄道帯リング（中心が太陽以外のとき）----
+  if (offSun > 0.01) drawZodiacRing(SX, SY, offSun, prec);
+
+  // ---- 春分点方向の基準線 (黄経0度) ----
+  ctx.save();
+  ctx.strokeStyle = 'rgba(120,150,210,0.16)';
+  ctx.lineWidth = 1; ctx.setLineDash([3, 6]);
+  ctx.beginPath(); ctx.moveTo(SX, SY); ctx.lineTo(SX + BASE * view.zoom * 1.35, SY); ctx.stroke();
+  ctx.restore();
+
+  // ---- 日心軌道の楕円（太陽中心のときだけ意味があるので、離れるほど薄く）----
+  if (offSun < 0.99) {
+    var oa = 1 - offSun;
+    for (var i = 0; i < PLANETS.length; i++) {
+      var k = PLANETS[i].key, o = ORB[k];
+      var sel = (selected === k);
+      ctx.beginPath();
+      for (var m = 0; m <= ORB_N; m++) {
+        var idx = (m % ORB_N) * 2;
+        var orr = o[idx], oll = o[idx + 1];
+        var wx = orr * Math.cos(oll) - ORG.x, wy = orr * Math.sin(oll) - ORG.y;
+        var rr = mapR(Math.sqrt(wx * wx + wy * wy)) * view.zoom, aa = Math.atan2(wy, wx);
+        var X = SX + rr * Math.cos(aa), Y = SY - rr * Math.sin(aa);
+        if (m === 0) ctx.moveTo(X, Y); else ctx.lineTo(X, Y);
+      }
+      ctx.strokeStyle = sel ? 'rgba(150,190,255,' + (0.72 * oa) + ')'
+                            : 'rgba(126,156,214,' + (0.30 * oa) + ')';
+      ctx.lineWidth = sel ? 1.7 : 1;
+      ctx.stroke();
+    }
+  }
+
+  // ---- 見かけの軌跡（中心が太陽以外のとき。逆行のループがここに出る）----
+  if (offSun > 0.01) drawTrails(SX, SY, offSun);
+
+  // ---- 太陽 ----
+  var sdx = -ORG.x, sdy = -ORG.y;
+  var sunR = Math.sqrt(sdx * sdx + sdy * sdy), sunA = Math.atan2(sdy, sdx);
+  var sunRR = mapR(sunR) * view.zoom;
+  var sunX = SX + sunRR * Math.cos(sunA), sunY = SY - sunRR * Math.sin(sunA);
+  var sunS = Math.max(8, dispSize(SUN.dia) * 0.45);
+  var gl = ctx.createRadialGradient(sunX, sunY, sunS * 0.55, sunX, sunY, sunS * 7.5);
+  gl.addColorStop(0, 'rgba(255,214,130,0.62)');
+  gl.addColorStop(0.22, 'rgba(255,178,74,0.20)');
+  gl.addColorStop(0.55, 'rgba(255,150,50,0.055)');
+  gl.addColorStop(1, 'rgba(255,140,40,0)');
+  ctx.fillStyle = gl;
+  ctx.beginPath(); ctx.arc(sunX, sunY, sunS * 7.5, 0, PI2); ctx.fill();
+  ctx.drawImage(SPRITES.Sun, sunX - sunS, sunY - sunS, sunS * 2, sunS * 2);
+  SUN._x = sunX; SUN._y = sunY; SUN._s = sunS;
+
+  // ---- 惑星 ----
+  var labels = [];
+  for (var i = 0; i < PLANETS.length; i++) {
+    var P = PLANETS[i], st = state[P.key];
+    var ddx = st.x - ORG.x, ddy = st.y - ORG.y;
+    var lonR = Math.atan2(ddy, ddx);
+    var rr = Math.sqrt(ddx * ddx + ddy * ddy);
+    var X = SX + mapR(rr) * Math.cos(lonR) * view.zoom;
+    var Y = SY - mapR(rr) * Math.sin(lonR) * view.zoom;
+    var s = dispSize(P.dia);
+    st._x = X; st._y = Y; st._s = s; st._rel = rr;
+
+    if (X < -120 || X > VW + 120 || Y < -140 || Y > VH + 140) continue;
+
+    // 大気のリムグロー
+    if (s > 3.2 && GLOWY[P.key]) {
+      var rg = ctx.createRadialGradient(X, Y, s * 0.86, X, Y, s * 1.7);
+      rg.addColorStop(0, GLOWY[P.key] + '0)');
+      rg.addColorStop(0.35, GLOWY[P.key] + '0.30)');
+      rg.addColorStop(1, GLOWY[P.key] + '0)');
+      ctx.fillStyle = rg;
+      ctx.beginPath(); ctx.arc(X, Y, s * 1.7, 0, PI2); ctx.fill();
+    }
+
+    if (P.key === 'Saturn') drawRing(X, Y, s, 1);              // 環の奥側
+
+    ctx.drawImage(SPRITES[P.key], X - s, Y - s, s * 2, s * 2);
+
+    // 太陽方向からの陰影 (夜側を落とす)
+    if (s > 2.6) {
+      var ang = Math.atan2(Y - sunY, X - sunX), gx = Math.cos(ang), gy = Math.sin(ang);
+      ctx.save();
+      ctx.beginPath(); ctx.arc(X, Y, s, 0, PI2); ctx.clip();
+      var lg = ctx.createLinearGradient(X - gx * s, Y - gy * s, X + gx * s, Y + gy * s);
+      lg.addColorStop(0, 'rgba(2,3,10,0)');
+      lg.addColorStop(0.42, 'rgba(2,3,10,0.06)');
+      lg.addColorStop(1, 'rgba(2,3,10,0.60)');
+      ctx.fillStyle = lg; ctx.fillRect(X - s, Y - s, s * 2, s * 2);
+      ctx.restore();
+    }
+
+    if (P.key === 'Saturn') drawRing(X, Y, s, 2);              // 環の手前側
+
+    if (selected === P.key) {
+      ctx.save();
+      ctx.strokeStyle = 'rgba(160,200,255,0.95)'; ctx.lineWidth = 1.6;
+      ctx.setLineDash([4, 5]); ctx.lineDashOffset = -(now / 34) % 9;
+      ctx.beginPath(); ctx.arc(X, Y, s + 8.5, 0, PI2); ctx.stroke();
+      ctx.restore();
+    }
+
+    if (Math.hypot(X - sunX, Y - sunY) > sunS + 10) {
+      labels.push([P.ja, X, Y, s, selected === P.key || centerKey === P.key, P.key === 'Saturn']);
+    }
+  }
+
+  // ---- 月（地球中心のときだけ）----
+  var moonShown = (centerKey === 'Earth' && view.cmix > 0.25);
+  if (moonShown) drawMoon(SX, SY, sunX, sunY, prec, labels);
+
+  // ---- リングへの指示線 ----
+  if (offSun > 0.01) {
+    var ptrs = [{ x: sunX, y: sunY, s: sunS, col: 'rgba(255,198,110,0.32)', mark: 'rgba(255,216,140,0.95)' }];
+    for (i = 0; i < PLANETS.length; i++) {
+      var stp = state[PLANETS[i].key];
+      if (PLANETS[i].key !== centerKey && stp._x !== undefined) {
+        ptrs.push({ x: stp._x, y: stp._y, s: stp._s });
+      }
+    }
+    if (moonShown) ptrs.push({ x: moonInfo.x, y: moonInfo.y, s: moonInfo.s,
+                               col: 'rgba(215,222,240,0.32)', mark: 'rgba(235,240,250,0.95)' });
+    drawPointers(SX, SY, offSun, ptrs);
+  }
+
+  // ---- 中心マーク ----
+  if (offSun > 0.02 && centerKey !== 'Earth') {
+    ctx.save();
+    ctx.globalAlpha = offSun; ctx.strokeStyle = 'rgba(170,205,255,0.55)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(SX, SY, 15, 0, PI2); ctx.stroke();
+    ctx.restore();
+  }
+
+  // ---- ラベル ----
+  // 4方向の候補から、画面内かつ他のラベル・天体と重ならない位置を選ぶ。
+  // 大きい惑星から先に確定させる (小さい惑星のラベルが避ける)。
+  ctx.font = '600 11px -apple-system,"Hiragino Sans",sans-serif';
+  ctx.textBaseline = 'middle';
+  labels.sort(function (a, b) { return b[3] - a[3]; });
+  var occupied = [];
+  for (var i = 0; i < labels.length; i++) {           // 天体そのものを障害物として登録
+    var Lp = labels[i], pad = Lp[5] ? Lp[3] * 2.4 : Lp[3];   // 環つきは広め
+    occupied.push([Lp[1] - pad, Lp[2] - pad, 2 * pad, 2 * pad]);
+  }
+  occupied.push([sunX - sunS * 1.2, sunY - sunS * 1.2, sunS * 2.4, sunS * 2.4]);
+  function overlapArea(bx) {                       // 重なり面積の合計
+    var sum = 0;
+    for (var q = 0; q < occupied.length; q++) {
+      var o = occupied[q];
+      var w = Math.min(bx[0] + bx[2], o[0] + o[2]) - Math.max(bx[0], o[0]);
+      var h = Math.min(bx[1] + bx[3], o[1] + o[3]) - Math.max(bx[1], o[1]);
+      if (w > 0 && h > 0) sum += w * h;
+    }
+    return sum;
+  }
+  for (var i = 0; i < labels.length; i++) {
+    var L = labels[i], w = ctx.measureText(L[0]).width, s = L[3];
+    var gap = L[5] ? s * 2.35 : s;                    // 土星は環のぶん外へ
+    var cand = [
+      [L[1] + gap + 6, L[2] - s - 4, 'left'],
+      [L[1] - gap - 6, L[2] - s - 4, 'right'],
+      [L[1], L[2] + gap + 12, 'center'],
+      [L[1], L[2] - gap - 12, 'center'],
+      [L[1] + gap + 6, L[2] + s + 5, 'left'],
+      [L[1] - gap - 6, L[2] + s + 5, 'right']
+    ];
+    // 画面内に収まる候補のうち、重なりが最小のものを採用する。
+    // 完全に空いている候補があれば即座に確定 (探索を打ち切る)。
+    var best = null, box = null, bestOv = Infinity;
+    for (var c = 0; c < cand.length; c++) {
+      var lx = cand[c][0], ly = cand[c][1], al = cand[c][2];
+      var bx0 = al === 'left' ? lx : al === 'right' ? lx - w : lx - w / 2;
+      var b = [bx0 - 2, ly - 8, w + 4, 16];
+      if (b[0] < 6 || b[0] + b[2] > VW - 6 || b[1] < 56 || b[1] + b[3] > VH - 156) continue;
+      var ov = overlapArea(b);
+      if (ov < bestOv) { bestOv = ov; best = cand[c]; box = b; }
+      if (ov === 0) break;
+    }
+    if (!best) continue;                              // 画面外にしか置けない → 描かない
+    occupied.push(box);
+    ctx.textAlign = best[2];
+    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx.fillText(L[0], best[0] + 0.5, best[1] + 1);
+    ctx.fillStyle = L[4] ? '#bcd6ff' : 'rgba(206,218,240,0.90)';
+    ctx.fillText(L[0], best[0], best[1]);
+  }
+  ctx.textAlign = 'left';
+
+  drawScaleBar();
+  if (now - lastHud > 90) { lastHud = now; updateHUD(); }   // DOM更新は間引く
+  requestAnimationFrame(draw);
+}
+var lastHud = 0;
+
+/* 実スケール時のみ意味を持つ距離目盛 */
+function drawScaleBar() {
+  var alpha = 1 - view.blend;
+  ctx.save();
+  ctx.globalAlpha = 1;
+  if (alpha > 0.03) {
+    var opts = [0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, 20], pick = 1, pxLen = 0;
+    for (var i = 0; i < opts.length; i++) {
+      var L = opts[i] / view.amax * BASE * view.zoom;
+      if (L > 46 && L < 150) { pick = opts[i]; pxLen = L; break; }
+      pick = opts[i]; pxLen = L;
+    }
+    ctx.globalAlpha = alpha;
+    var x0 = 16, yb = VH - 168;
+    ctx.strokeStyle = 'rgba(200,214,240,0.75)'; ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.moveTo(x0, yb - 4); ctx.lineTo(x0, yb + 4);
+    ctx.moveTo(x0, yb); ctx.lineTo(x0 + pxLen, yb);
+    ctx.moveTo(x0 + pxLen, yb - 4); ctx.lineTo(x0 + pxLen, yb + 4);
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(200,214,240,0.88)';
+    ctx.font = '600 10.5px -apple-system,sans-serif';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
+    ctx.fillText(pick + ' AU', x0 + 2, yb - 6);
+  }
+  if (view.blend > 0.03) {
+    ctx.globalAlpha = view.blend;
+    ctx.fillStyle = 'rgba(150,166,196,0.85)';
+    ctx.font = '600 10.5px -apple-system,"Hiragino Sans",sans-serif';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
+    ctx.fillText('距離は対数圧縮表示 / 大きさは実比率ではありません', 16, VH - 168);
+  }
+  ctx.restore();
+}
+
+/* =====================================================================
+   9. HUD / 情報パネル
+   =================================================================== */
+var elClock = document.getElementById('clock'), elLive = document.getElementById('live');
+var WD = ['日', '月', '火', '水', '木', '金', '土'];
+function pad(n) { return n < 10 ? '0' + n : '' + n; }
+function updateHUD() {
+  var d = new Date(simMs);
+  elClock.textContent = d.getFullYear() + '年' + (d.getMonth() + 1) + '月' + d.getDate() + '日('
+    + WD[d.getDay()] + ') ' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
+  var live = pinnedMs === null && speedIdx === 0 && Math.abs(offsetMs) < 1500;
+  if (pinnedMs !== null) {
+    elLive.textContent = speedIdx === 0 ? '誕生時' : '誕生時 ' + SPEEDS[speedIdx].l;
+    elLive.className = 'birth';
+  } else {
+    elLive.textContent = live ? '現在' : SPEEDS[speedIdx].l;
+    elLive.className = live ? '' : 'fast';
+  }
+  if (sheetOpen) fillSheet(sheetKey, true);
+  if (calOpen) updateCal(false);
+}
+
+function fmtKm(km) {
+  if (km >= 1e8) return (km / 1e8).toFixed(2) + '<small>億 km</small>';
+  if (km >= 1e4) return Math.round(km / 1e4).toLocaleString('ja-JP') + '<small>万 km</small>';
+  return Math.round(km).toLocaleString('ja-JP') + '<small> km</small>';
+}
+function fmtPeriod(days) {
+  if (days < 500) return days.toFixed(1) + '<small>日</small>';
+  return (days / 365.25).toFixed(days < 4000 ? 2 : 1) + '<small>年</small>';
+}
+
+var sheet = document.getElementById('sheet'), sheetOpen = false, sheetKey = null;
+function fillSheet(key, quiet) {
+  if (!key) return;
+  var facts = document.getElementById('sfacts');
+  if (key === 'Sun') {
+    document.getElementById('sname').textContent = SUN.ja;
+    document.getElementById('sen').textContent = SUN.en;
+    document.getElementById('swatch').style.background =
+      'radial-gradient(circle at 36% 32%, #fff8dc 0%, #ffc659 45%, #f0902a 100%)';
+    facts.innerHTML =
+      '<div class="fact"><b>直径</b><i>' + SUN.dia.toLocaleString('ja-JP') + '<small>km</small></i></div>' +
+      '<div class="fact"><b>地球との比</b><i>109<small>倍</small></i></div>' +
+      '<div class="fact"><b>表面温度</b><i>5,772<small>K</small></i></div>' +
+      '<div class="fact"><b>系の質量に占める割合</b><i>99.86<small>%</small></i></div>';
+    document.getElementById('sdesc').textContent = SUN.desc;
+    document.getElementById('snote').textContent =
+      '図中の天体の大きさは実際の比率ではありません(見やすさのため圧縮しています)。';
+    return;
+  }
+  var P = PMAP[key], st = state[key];
+  if (!st) return;
+  var E = state.Earth;
+  var gx = st.x - E.x, gy = st.y - E.y, gz = st.z - E.z;
+  var geo = Math.sqrt(gx * gx + gy * gy + gz * gz);
+  if (!quiet) {
+    document.getElementById('sname').textContent = P.ja;
+    document.getElementById('sen').textContent = P.en;
+    document.getElementById('sdesc').textContent = P.desc;
+    document.getElementById('swatch').style.background =
+      'radial-gradient(circle at 34% 30%, ' + P.tint + ' 0%, ' + P.tint + ' 45%, rgba(0,0,0,.72) 100%)';
+    document.getElementById('snote').textContent =
+      '座標は J2000.0 黄道座標系。JPL/Standish の平均軌道要素から算出（誤差は黄経で数分角以内）。'
+      + '図中の天体の大きさは実際の比率ではありません。';
+  }
+  var gl = geoLonOfDate(key, T_now), rg = retroRate(key, T_now);
+  facts.innerHTML =
+    '<div class="fact"><b>太陽からの距離</b><i>' + st.r.toFixed(3) + '<small>AU</small></i></div>' +
+    '<div class="fact"><b>同 (km換算)</b><i>' + fmtKm(st.r * AU_KM) + '</i></div>' +
+    '<div class="fact"><b>日心黄経</b><i>' + st.lon.toFixed(2) + '<small>°</small></i></div>' +
+    '<div class="fact"><b>日心黄緯</b><i>' + st.lat.toFixed(2) + '<small>°</small></i></div>' +
+    (key === 'Earth' ? '' :
+      '<div class="fact"><b>地心黄経 (視位置)</b><i>' + gl.toFixed(2) + '<small>°</small></i></div>' +
+      '<div class="fact"><b>順行 / 逆行</b><i>' + (rg < 0 ? '逆行中' : '順行') +
+        '<small>' + (rg >= 0 ? '+' : '') + rg.toFixed(3) + '°/日</small></i></div>') +
+    '<div class="fact"><b>地球からの距離</b><i>' + geo.toFixed(3) + '<small>AU</small></i></div>' +
+    '<div class="fact"><b>公転周期</b><i>' + fmtPeriod(P.per) + '</i></div>' +
+    '<div class="fact"><b>直径</b><i>' + P.dia.toLocaleString('ja-JP') + '<small>km</small></i></div>' +
+    '<div class="fact"><b>自転周期</b><i>' + P.rot + '</i></div>' +
+    '<div class="fact"><b>離心率</b><i>' + st.e.toFixed(4) + '</i></div>' +
+    '<div class="fact"><b>衛星の数</b><i>' + P.moons + '<small>個</small></i></div>';
+}
+
+/* 地球から見た黄経（その日の分点）。逆行判定にも使う。 */
+function geoLonOfDate(key, T) {
+  var p = planetState(key, T), e = planetState('Earth', T);
+  return norm360(Math.atan2(p.y - e.y, p.x - e.x) / DEG + precDeg(T));
+}
+/* 地心黄経の変化率 [度/日]。負なら逆行。 */
+function retroRate(key, T) {
+  var dT = 1 / 36525;                                  // 1日
+  var a = geoLonOfDate(key, T - dT / 2), b = geoLonOfDate(key, T + dT / 2);
+  var d = b - a; if (d > 180) d -= 360; if (d < -180) d += 360;
+  return d;
+}
+function openSheet(key) {
+  sheetKey = key; selected = key;
+  fillSheet(key, false); fillSheet(key, true);
+  sheetOpen = true; sheet.classList.add('open');
+}
+function closeSheet() { sheetOpen = false; sheetKey = null; selected = null; sheet.classList.remove('open'); }
+document.getElementById('sclose').addEventListener('click', closeSheet);
+document.getElementById('grip').addEventListener('click', closeSheet);
+
+/* =====================================================================
+   9b. 中心天体バー
+   ===================================================================== */
+var elCName = document.getElementById('cname'),
+    bCal = document.getElementById('bCal'), bSun = document.getElementById('bSun');
+function syncCenterBar() {
+  var nm = centerKey === 'Sun' ? SUN.ja : PMAP[centerKey].ja;
+  elCName.innerHTML = '◎ <b>' + nm + '</b>中心';
+  bSun.hidden = (centerKey === 'Sun');
+  bCal.hidden = (centerKey !== 'Earth');
+  if (centerKey !== 'Earth') closeCal();
+  bCal.classList.toggle('hot', calOpen);
+}
+document.getElementById('bInfo').addEventListener('click', function () {
+  if (calOpen) closeCal();
+  openSheet(centerKey);
+});
+bSun.addEventListener('click', function () { closeSheet(); setCenter('Sun'); });
+bCal.addEventListener('click', function () { if (calOpen) closeCal(); else openCal(); });
+
+/* =====================================================================
+   9c. 暦パネル
+   -------------------------------------------------------------------
+   区切りを解く計算は重いので、実時間で間引いて更新する。
+   早送りしていても暦の表示がちゃんと連動して進む。
+   ===================================================================== */
+var calEl = document.getElementById('cal'), calOpen = false, calWall = -1e9, calJd = -1e9;
+var mcv = document.getElementById('mooncv'), mctx = mcv.getContext('2d');
+
+function openCal() { calOpen = true; calEl.classList.add('open'); closeSheet(); calWall = -1e9; updateCal(true); bCal.classList.add('hot'); }
+function closeCal() { calOpen = false; calEl.classList.remove('open'); bCal.classList.remove('hot'); }
+document.getElementById('calclose').addEventListener('click', closeCal);
+
+function jstStr(jd, withTime) {
+  var p = CAL.jstParts(jd);
+  var s = p.y + '/' + p.m + '/' + p.d;
+  return withTime === false ? s : s + ' ' + pad(p.hh) + ':' + pad(p.mm);
+}
+function kv(k, v) { return '<div class="kv"><span>' + k + '</span><b>' + v + '</b></div>'; }
+
+function updateCal(force) {
+  if (!calOpen) return;
+  var wall = performance.now();
+  if (!force && wall - calWall < 130) return;
+  calWall = wall;
+  var jd = CAL.msToJd(simMs);
+  if (!force && Math.abs(jd - calJd) < 1e-6) return;
+  calJd = jd;
+  var S = CAL.snapshot(jd);
+  var p = CAL.jstParts(jd);
+
+  document.getElementById('caldate').textContent =
+    p.y + '年' + p.m + '月' + p.d + '日 ' + pad(p.hh) + ':' + pad(p.mm) + ' (JST基準)';
+
+  // ---- 50音歴 ----
+  var g = S.gojuon;
+  document.getElementById('g50char').textContent = g.sound;
+  document.getElementById('g50no').textContent = '50音歴  第 ' + g.no + ' 音 / 50';
+  document.getElementById('g50rng').innerHTML =
+    jstStr(g.startJd) + ' 〜 ' + jstStr(g.endJd) + '<br>この区間 ' + g.lenDays.toFixed(2) + ' 日';
+  document.getElementById('g50fill').style.width = (g.progress * 100).toFixed(1) + '%';
+  document.getElementById('g50elapsed').textContent =
+    '経過 ' + g.elapsedDays.toFixed(2) + ' 日 (' + (g.progress * 100).toFixed(0) + '%)';
+  document.getElementById('g50next').textContent = '次は「' + g.next + '」';
+
+  // ---- 月齢・月相 ----
+  var M = S.moon;
+  drawMoonPanel(M.illum, M.elongation);
+  document.getElementById('moonkv').innerHTML =
+    kv('月齢', M.age.toFixed(2) + '<small> 日</small>') +
+    kv('月相', M.name) +
+    kv('輝面比', (M.illum * 100).toFixed(1) + '<small> %</small>') +
+    kv('太陽との離角', M.elongation.toFixed(2) + '<small> °</small>') +
+    kv('月の黄経', M.lon.toFixed(3) + '<small> °</small>') +
+    kv('月の黄緯', M.lat.toFixed(3) + '<small> °</small>') +
+    kv('地心距離', Math.round(M.dist).toLocaleString('ja-JP') + '<small> km</small>') +
+    kv('次の新月', jstStr(M.nextNewJd)) +
+    kv('次の満月', jstStr(M.nextFullJd));
+
+  // ---- 七十二候 ----
+  var KO = S.kou;
+  document.getElementById('koubody').innerHTML =
+    kv('現在の候', '<b style="font-size:15px">' + KO.kanji + '</b>') +
+    kv('読み', KO.yomi) +
+    kv('意味', KO.imi) +
+    kv('第何候', KO.no + ' / 72') +
+    kv('属する節気', KO.sekkiName + ' の' + KO.pos) +
+    kv('入り', jstStr(KO.startJd)) +
+    kv('次の候', '第' + KO.nextNo + '候 ' + KO.nextKanji + '<small> ' + jstStr(KO.nextJd) + '</small>') +
+    '<div class="note">名称は日本の<b>本朝七十二候</b>（明治7年・略本暦の系統）を採用しています。'
+    + '中国の宣明暦系（元の七十二候）とは名称が異なります。両者を混ぜていません。</div>';
+
+  // ---- 二十四節気・雑節 ----
+  var K = S.sekki;
+  var zt = S.zassetsu.length
+    ? '<div class="tags">' + S.zassetsu.map(function (z) { return '<span class="tag">' + z + '</span>'; }).join('') + '</div>'
+    : '';
+  document.getElementById('sekkibody').innerHTML =
+    kv('現在の節気', '<b style="font-size:15px">' + K.name + '</b>') +
+    kv('入った日時', jstStr(K.jd)) +
+    kv('次の節気', K.nextName + ' <small>' + jstStr(K.nextJd) + '</small>') +
+    kv('太陽黄経', S.sunLon.toFixed(3) + '<small> °</small>') + zt;
+
+  // ---- 旧暦 ----
+  var L = S.lunar;
+  document.getElementById('lunarbody').innerHTML =
+    kv('旧暦', '<b style="font-size:15px">' + (L.leap ? '閏' : '') + L.month + '月 ' + L.day + '日</b>') +
+    kv('年', L.year + '<small> 年</small>') +
+    kv('月の大小', (L.big ? '大の月' : '小の月') + '<small> ' + L.monthLength + '日</small>') +
+    kv('朔 (1日)', jstStr(L.monthStartJd)) +
+    kv('次月の朔', jstStr(L.nextMonthStartJd)) +
+    kv('この年の閏月', L.leapInCycle ? '閏' + L.leapInCycle + '月' : 'なし');
+
+  // ---- 二十七宿 ----
+  var N = S.nakshatra;
+  document.getElementById('nakbody').innerHTML =
+    kv('宿', '<b style="font-size:15px">' + N.name + '</b> <small>' + N.sanskrit + '</small>') +
+    kv('番号', N.no + ' / 27') +
+    kv('入宿', jstStr(N.enterJd)) +
+    kv('出宿', jstStr(N.leaveJd)) +
+    kv('宿内の位置', N.intoDeg.toFixed(2) + '<small>° / 13.33°  第' + N.pada + 'パーダ</small>') +
+    kv('月の恒星黄経', N.sidLon.toFixed(3) + '<small> °</small>') +
+    kv('アヤナムシャ', N.ayanamsha.toFixed(4) + '<small> ° (ラヒリ)</small>') +
+    '<div class="note"><b>流儀の確認をお願いします。</b>ここは既定として'
+    + '「ラヒリのアヤナムシャによる恒星黄経・恒星黄経0°＝婁宿(アシュヴィニー)起点」'
+    + 'を採用しています。宿曜経の系統によって起点の宿やアヤナムシャの取り方が異なります。'
+    + 'ソース中の <b>NAKSHATRA_CONFIG</b>（ayanamsha と startIndex）1か所で切り替えられます。'
+    + 'ayanamsha を 0 にすると回帰黄道になります。</div>';
+}
+
+/* 暦パネルの月相アイコン */
+function drawMoonPanel(k, el) {
+  var W = mcv.width, R = W / 2 - 4;
+  mctx.clearRect(0, 0, W, W);
+  mctx.fillStyle = '#0a0c16'; mctx.fillRect(0, 0, W, W);
+  // 上が北。満ちていく側(離角0-180)は右が光る
+  var chi = el <= 180 ? 0 : Math.PI;
+  drawMoonDisc(mctx, W / 2, W / 2, R, k, chi, '#efece2', '#242732');
+  mctx.strokeStyle = 'rgba(200,210,230,0.35)'; mctx.lineWidth = 1.5;
+  mctx.beginPath(); mctx.arc(W / 2, W / 2, R, 0, PI2); mctx.stroke();
+}
+
+/* =====================================================================
+   10. 操作 (パン / ピンチ / タップ)
+   =================================================================== */
+var ZMIN = 0.55, ZMAX = 520;
+var ptr = { n: 0, x0: 0, y0: 0, d0: 0, mx: 0, my: 0, t0: 0, moved: 0, z0: 1 };
+
+function pts(e) {
+  var t = e.touches;
+  if (!t) return [{ x: e.clientX, y: e.clientY }];
+  var a = []; for (var i = 0; i < t.length && i < 2; i++) a.push({ x: t[i].clientX, y: t[i].clientY });
+  return a;
+}
+function onStart(e) {
+  var p = pts(e);
+  killTweens(['zoom', 'panX', 'panY']);
+  ptr.n = p.length; ptr.moved = 0; ptr.t0 = performance.now(); ptr.z0 = view.zoom;
+  if (p.length === 1) { ptr.x0 = p[0].x; ptr.y0 = p[0].y; }
+  else {
+    ptr.mx = (p[0].x + p[1].x) / 2; ptr.my = (p[0].y + p[1].y) / 2;
+    ptr.d0 = Math.hypot(p[0].x - p[1].x, p[0].y - p[1].y) || 1;
+    ptr.x0 = ptr.mx; ptr.y0 = ptr.my;
+  }
+}
+function onMove(e) {
+  if (!ptr.n) return;
+  e.preventDefault();
+  var p = pts(e);
+  if (p.length !== ptr.n) { onStart(e); return; }
+  if (p.length === 1) {
+    var dx = p[0].x - ptr.x0, dy = p[0].y - ptr.y0;
+    ptr.moved += Math.abs(dx) + Math.abs(dy);
+    view.panX += dx; view.panY += dy;
+    ptr.x0 = p[0].x; ptr.y0 = p[0].y;
+  } else {
+    var mx = (p[0].x + p[1].x) / 2, my = (p[0].y + p[1].y) / 2;
+    var d = Math.hypot(p[0].x - p[1].x, p[0].y - p[1].y) || 1;
+    ptr.moved += 30;
+    zoomAt(mx, my, view.zoom * (d / ptr.d0));
+    view.panX += mx - ptr.x0; view.panY += my - ptr.y0;
+    ptr.d0 = d; ptr.x0 = mx; ptr.y0 = my;
+  }
+}
+function zoomAt(px, py, nz) {
+  nz = Math.max(ZMIN, Math.min(ZMAX, nz));
+  var k = nz / view.zoom;
+  view.panX = px - CX - (px - CX - view.panX) * k;
+  view.panY = py - CY - (py - CY - view.panY) * k;
+  view.zoom = nz;
+}
+var lastTap = 0;
+function onEnd(e) {
+  if (ptr.n === 1 && ptr.moved < 12 && performance.now() - ptr.t0 < 340) {
+    var t = (e.changedTouches && e.changedTouches[0]) || e;
+    var now = performance.now();
+    if (now - lastTap < 300) { resetView(); lastTap = 0; }
+    else { lastTap = now; hitTest(t.clientX, t.clientY); }
+  }
+  ptr.n = 0;
+}
+/* タップの設計:
+     ・天体をタップ  → その天体を中心に置き直す（切替アニメーション）
+     ・中心の天体をもう一度タップ → その天体の情報パネルを開く
+     ・何もない所をタップ → パネルを閉じる
+   情報パネルは画面の6割を覆うので、切替と同時に開くと
+   「いま見たかった切替後の図」が隠れてしまう。だから切替を優先し、
+   情報は中心天体バーの ⓘ か「もう一度タップ」で開く形にした。 */
+function hitTest(x, y) {
+  var best = null, bd = 1e9;
+  for (var i = 0; i < PLANETS.length; i++) {
+    var st = state[PLANETS[i].key]; if (!st || st._x === undefined) continue;
+    var d = Math.hypot(st._x - x, st._y - y);
+    var hit = Math.max(st._s * 1.9, 27);
+    if (d < hit && d < bd) { bd = d; best = PLANETS[i].key; }
+  }
+  var ds = Math.hypot(SUN._x - x, SUN._y - y);
+  if (ds < Math.max(SUN._s * 1.8, 28) && ds < bd) { bd = ds; best = 'Sun'; }
+  if (centerKey === 'Earth') {                       // 月も拾う
+    var dm = Math.hypot(moonInfo.x - x, moonInfo.y - y);
+    if (dm < Math.max(moonInfo.s * 2.2, 26) && dm < bd) {
+      if (calOpen) closeCal(); else openCal();
+      return;
+    }
+  }
+  if (!best) { closeSheet(); closeCal(); return; }
+  if (best === centerKey) { openSheet(best); return; }   // すでに中心 → 情報を開く
+  closeSheet();
+  setCenter(best);
+}
+function resetView() {
+  tweenTo('zoom', 1, 600); tweenTo('panX', 0, 600); tweenTo('panY', 0, 600);
+}
+cv.addEventListener('touchstart', onStart, { passive: true });
+cv.addEventListener('touchmove', onMove, { passive: false });
+cv.addEventListener('touchend', onEnd, { passive: true });
+cv.addEventListener('touchcancel', function () { ptr.n = 0; }, { passive: true });
+cv.addEventListener('mousedown', function (e) { onStart(e); });
+window.addEventListener('mousemove', function (e) { if (ptr.n) onMove(e); });
+window.addEventListener('mouseup', function (e) { if (ptr.n) onEnd(e); });
+cv.addEventListener('wheel', function (e) {
+  e.preventDefault();
+  killTweens(['zoom', 'panX', 'panY']);
+  zoomAt(e.clientX, e.clientY, view.zoom * Math.pow(1.0016, -e.deltaY));
+}, { passive: false });
+document.addEventListener('gesturestart', function (e) { e.preventDefault(); }, { passive: false });
+document.addEventListener('dblclick', function (e) { e.preventDefault(); }, { passive: false });
+
+/* =====================================================================
+   11. UI 配線
+   =================================================================== */
+var bComp = document.getElementById('bComp'), bReal = document.getElementById('bReal');
+function setScale(compressed) {
+  bComp.classList.toggle('on', compressed);
+  bReal.classList.toggle('on', !compressed);
+  killTweens(['blend', 'zoom', 'panX', 'panY']);
+  tweenTo('blend', compressed ? 1 : 0, 1000);
+  tweenTo('zoom', 1, 1000); tweenTo('panX', 0, 1000); tweenTo('panY', 0, 1000);
+}
+bComp.addEventListener('click', function () { setScale(true); });
+bReal.addEventListener('click', function () { setScale(false); });
+
+var slider = document.getElementById('speed'), sval = document.getElementById('speedval');
+function applySpeed() {
+  speedIdx = +slider.value;
+  sval.textContent = SPEEDS[speedIdx].l;
+  slider.style.setProperty('--p', (speedIdx / (SPEEDS.length - 1) * 100) + '%');
+}
+slider.addEventListener('input', applySpeed);
+applySpeed();
+
+document.getElementById('bNow').addEventListener('click', function () {
+  pinnedMs = null; offsetMs = 0; simMs = Date.now();     // 誕生時ロックも解除
+  slider.value = 0; applySpeed();
+});
+
+/* =====================================================================
+   11b. 誕生日パネル
+   -------------------------------------------------------------------
+   プライバシー: 入力は端末の外に出ない（このアプリは一切通信しない）。
+   localStorage への保存は既定オフのオプトイン。削除ボタンを必ず置く。
+   =================================================================== */
+var LS_KEY = 'solar.birth.v1';
+var birthEl = document.getElementById('birth'), birthOpen = false;
+var eDate = document.getElementById('bDate'), eTime = document.getElementById('bTime'),
+    ePlace = document.getElementById('bPlace'), eGender = document.getElementById('bGender'),
+    eSelf = document.getElementById('bSelf'), eSave = document.getElementById('bSave');
+var lastReading = null, statusStore = {};
+
+function openBirth() { birthOpen = true; birthEl.classList.add('open'); closeSheet(); closeCal(); closeRead(); }
+function closeBirth() { birthOpen = false; birthEl.classList.remove('open'); }
+document.getElementById('bBirth').addEventListener('click', function () {
+  if (birthOpen) closeBirth(); else openBirth();
+});
+document.getElementById('birthClose').addEventListener('click', closeBirth);
+
+function readForm() {
+  var d = eDate.value;
+  if (!d) return null;
+  var parts = d.split('-');
+  var t = eTime.value, hh = 0, mi = 0, hasTime = false;
+  if (t) { var tp = t.split(':'); hh = +tp[0]; mi = +tp[1]; hasTime = true; }
+  return {
+    y: +parts[0], m: +parts[1], d: +parts[2],
+    hasTime: hasTime, hh: hh, mi: mi,
+    place: ePlace.value.trim() || null,
+    gender: eGender.value.trim() || null,
+    self: eSelf.value.trim() || null
+  };
+}
+function birthMs(inp) {
+  return Date.UTC(inp.y, inp.m - 1, inp.d, inp.hasTime ? inp.hh : 12, inp.hasTime ? inp.mi : 0)
+       - 9 * 3600000;                                   // JST として解釈する
+}
+function applyBirth() {
+  var inp = readForm();
+  if (!inp) { alert('生年月日を入力してください。'); return null; }
+  pinnedMs = birthMs(inp);
+  simMs = pinnedMs;
+  slider.value = 0; applySpeed();
+  saveIfOptedIn(inp);
+  return inp;
+}
+document.getElementById('bApply').addEventListener('click', function () {
+  if (applyBirth()) closeBirth();
+});
+document.getElementById('bRead').addEventListener('click', function () {
+  var inp = applyBirth();
+  if (!inp) return;
+  closeBirth();
+  showReading(inp);
+});
+function saveIfOptedIn(inp) {
+  try {
+    if (eSave.checked) {
+      localStorage.setItem(LS_KEY, JSON.stringify({ input: inp, status: statusStore, save: true }));
+    } else {
+      localStorage.removeItem(LS_KEY);
+    }
+  } catch (e) { /* 保存できない環境では黙って何もしない */ }
+}
+document.getElementById('bClear').addEventListener('click', function () {
+  try { localStorage.removeItem(LS_KEY); } catch (e) {}
+  statusStore = {}; eSave.checked = false;
+  ePlace.value = ''; eGender.value = ''; eSelf.value = ''; eTime.value = '';
+  alert('この端末に保存された入力と検証状態を削除しました。');
+});
+(function restore() {
+  try {
+    var raw = localStorage.getItem(LS_KEY);
+    if (!raw) return;
+    var o = JSON.parse(raw);
+    if (!o || !o.save || !o.input) return;
+    var i = o.input;
+    eDate.value = i.y + '-' + pad(i.m) + '-' + pad(i.d);
+    if (i.hasTime) eTime.value = pad(i.hh) + ':' + pad(i.mi);
+    ePlace.value = i.place || ''; eGender.value = i.gender || ''; eSelf.value = i.self || '';
+    eSave.checked = true;
+    statusStore = o.status || {};
+  } catch (e) {}
+})();
+
+/* =====================================================================
+   11c. 読みの描画
+   -------------------------------------------------------------------
+   出力順序は指示書8 / output-template.md に従う:
+     1 結論 → 2 入力と計算条件 → 3 暦計算上の事実 → 4 伝統モデル上の構造
+     → 5 人物仮説 → 6 課題と成長実験 → 7 中心目的の候補
+     → 8 確認済み/未確認/判定不能 → 9 次に観察すること
+   =================================================================== */
+var readEl = document.getElementById('read'), readOpen = false;
+function closeRead() { readOpen = false; readEl.classList.remove('open'); }
+document.getElementById('readClose').addEventListener('click', closeRead);
+
+function esc(s) {
+  return String(s).replace(/[&<>"]/g, function (c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+  });
+}
+function chip(t) { return '<span class="chip c' + t + '">' + t + '</span>'; }
+function row(k, v) { return '<div class="rrow"><i>' + k + '</i><b>' + v + '</b></div>'; }
+
+function showReading(inp) {
+  var R = READ.read(inp);
+  lastReading = R;
+  var P = R.pillars, A = R.analysis, S = R.sanmei, K = R.shukuyo, cal = R.calendar;
+  var H = [];
+
+  document.getElementById('readsub').textContent =
+    inp.y + '年' + inp.m + '月' + inp.d + '日' + (inp.hasTime ? ' ' + pad(inp.hh) + ':' + pad(inp.mi) : '（時刻なし）');
+
+  /* --- 冒頭の注意書き（主従の固定） --- */
+  H.push('<div class="warn"><b>この読みの立て方。</b>'
+    + 'あなたの生活・履歴・環境・選択・行動が<b>主</b>で、以下の暦記号・星・宿・解釈文は'
+    + 'すべて<b>従</b>です。生年月日から見えない本質や未来を決めることはできません。'
+    + 'ここに出るのは<b>現実で確かめるための問い</b>であって、当たり外れを競うものではありません。'
+    + '当たっているかどうかは、あなたの具体的な出来事だけが決めます。'
+    + 'この読みでは、当たり外れを数値にすることはしません。</div>');
+
+  /* --- 1. 結論 --- */
+  H.push('<div class="rsec"><h3>1. 結論 <span>検証する価値のあるテーマ（3つ以内）</span></h3>');
+  R.themes.forEach(function (t, i) {
+    H.push('<div class="rlead"><b>' + (i + 1) + '. ' + esc(t.theme) + '</b>'
+      + '<p>' + chip('仮説') + esc(t.reality_check) + '</p></div>');
+  });
+  H.push('<p style="font-size:10.5px;color:#8896b1;line-height:1.7;margin-top:8px">'
+    + 'この3つは、下の構造から機械的に選んだ「確かめる順番の候補」です。'
+    + 'あなたにとって重要な順ではありません。</p></div>');
+
+  /* --- 2. 入力と計算条件 --- */
+  H.push('<div class="rsec"><h3>2. 入力と計算条件 <span>解釈の前に固定したもの</span></h3>');
+  H.push(row('生年月日', esc(inp.y + '-' + pad(inp.m) + '-' + pad(inp.d))));
+  H.push(row('出生時刻', inp.hasTime ? esc(pad(inp.hh) + ':' + pad(inp.mi)) : '不明（省略した計算あり）'));
+  H.push(row('出生地', inp.place ? esc(inp.place) : '不明'));
+  H.push(row('呼称・性別など', inp.gender ? esc(inp.gender) + '<br><span style="font-size:10px;color:#8896b1">呼称と、本人が確認する文脈の質問にのみ使用。性格・能力・役割・運勢の算出には使っていません。</span>' : '未入力'));
+  R.conventions.forEach(function (c) { H.push(row(c[0], esc(c[1]))); });
+  H.push('</div>');
+
+  /* --- 3. 暦計算上の事実 --- */
+  H.push('<div class="rsec"><h3>3. 暦・周期上の事実 <span>再現可能な計算</span></h3>');
+  H.push('<div class="pill">');
+  P.pillars.forEach(function (p) {
+    H.push('<div><u>' + p.name + '</u><s>' + p.gz + '</s><em>' + p.stemElem + '／' + p.branchElem
+      + '<br>' + (p.name === '日柱' ? '日主' : p.tenGodStem) + '</em></div>');
+  });
+  if (!inp.hasTime) H.push('<div><u>時柱</u><s>—</s><em>時刻不明のため<br>算出せず</em></div>');
+  H.push('</div>');
+  H.push(row(chip('計算') + '日主', P.dmName + '（' + P.dmYin + P.dmElem + '）'));
+  H.push(row(chip('計算') + '節気・候',
+    cal.sekki.name + '／第' + cal.kou.no + '候 ' + cal.kou.kanji + '（' + cal.kou.yomi + '）'));
+  H.push(row(chip('計算') + '旧暦',
+    (cal.lunar.leap ? '閏' : '') + cal.lunar.month + '月' + cal.lunar.day + '日'));
+  /* 読みの中では割合の数字を出さない（このアプリの他の場所の％表示と
+     混同されないようにするため）。月相は名称と月齢の日数だけにする。 */
+  H.push(row(chip('計算') + '月相', cal.moon.name + '（月齢' + cal.moon.age.toFixed(1) + '日）'));
+  H.push(row(chip('計算') + '50音歴', '第' + cal.gojuon.no + '音「' + cal.gojuon.sound + '」'));
+  H.push(row(chip('計算') + '五行の記号数',
+    A.elems.map(function (e) { return e.elem + e.count; }).join('　')
+    + '<br><span style="font-size:10px;color:#8896b1">命式というモデルの中に記号がいくつ現れたかであって、性格の強さの数値ではありません。</span>'));
+  H.push('</div>');
+
+  /* --- 4. 伝統モデル上の構造 --- */
+  H.push('<div class="rsec"><h3>4. 伝統モデル上の構造 <span>採用流派の固定対応</span></h3>');
+  H.push('<p style="font-size:10.5px;color:#8896b1;line-height:1.7;margin-bottom:9px">'
+    + '以下はすべて「モデル内での位置」であって、あなたという人の事実ではありません。</p>');
+  A.axes.forEach(function (a) {
+    H.push(row(chip('伝統') + a.axis, a.label + '：' + a.count + '個'
+      + (a.from.length ? '<br><span style="font-size:10px;color:#8896b1">' + esc(a.from.join('、')) + '</span>' : '')));
+  });
+  H.push(row(chip('伝統') + '十大主星',
+    S.stars.map(function (s) { return s.star; }).join('、')
+    + '<br><span style="font-size:10px;color:#8896b1">十神の再命名として写像（高尾学館系の対応）。</span>'));
+  H.push(row(chip('伝統') + '十二大従星',
+    S.jusei.map(function (j) { return j.src + '→' + j.star + '（' + j.stage + '）'; }).join('<br>')));
+  H.push(row(chip('計算') + '天中殺',
+    '日柱：' + S.dayTenchusatsu.name + '／年柱：' + S.yearTenchusatsu.name
+    + '<br><span style="font-size:10px;color:#8896b1">十干10と十二支12の差から、一旬に必ず二支が余るという算術です。'
+    + '「天が欠ける」「不運」は' + chip('伝統') + 'の解釈であって、この算術とは別物です。吉凶判定には使いません。</span>'));
+  H.push(row(chip('伝統') + '本命宿（宿曜道）',
+    '<b style="font-size:15px">' + K.name + '</b>'
+    + '<br><span style="font-size:10px;color:#8896b1">' + esc(K.formula) + '</span>'
+    + (K.leapNote ? '<br><span style="font-size:10px;color:#8896b1">' + esc(K.leapNote) + '</span>' : '')));
+  H.push(row(chip('計算') + '（比較資料）天文方式',
+    K.astro.name + '（月の恒星黄経 ' + K.astro.sidLon.toFixed(2) + '°／ラヒリ）'
+    + '<br><span style="font-size:10px;color:#8896b1">'
+    + (K.agrees ? 'たまたま一致しました。' : '伝統暦方式とは<b>異なります</b>。')
+    + '両者は別のモデルなので一致するとは限りません。宿曜道としては上の伝統暦方式を正とし、'
+    + 'これは比較のためだけに出しています。混ぜて使っていません。</span>'));
+  H.push('<div class="note" style="margin-top:10px"><b>流儀の確認をお願いします。</b>'
+    + '三九の関係表（宿番号の差から関係名を出す並び）は流派差があるため、'
+    + 'この読みでは<b>使っていません</b>。相手の生年月日が要ることもあり、'
+    + '単独の読みには含めていません。</div>');
+  H.push('</div>');
+
+  /* --- 中立軸 --- */
+  H.push('<div class="rsec"><h3>中立軸への変換 <span>三術を直接足し合わせない</span></h3>');
+  H.push('<p style="font-size:10.5px;color:#8896b1;line-height:1.7;margin-bottom:9px">'
+    + '四柱推命・算命学・宿曜道は別々のモデルなので、結果をそのまま合算しません。'
+    + 'いったん次の7つの軸へ移してから見比べます。流派をまたいだ一致は'
+    + '「象徴が重なった」というだけで、科学的な裏づけではありません。</p>');
+  R.neutral.forEach(function (n) {
+    H.push(row(n.key, esc(n.observed) + '<br><span style="font-size:10px;color:#9db4dd">→ ' + esc(n.question) + '</span>'));
+  });
+  H.push('</div>');
+
+  /* --- 5. 人物仮説 --- */
+  H.push('<div class="rsec"><h3>5. 人物理解の仮説 <span>反対仮説と確認質問が必ず付きます</span></h3>');
+  R.hypotheses.forEach(function (h, i) {
+    var st = statusStore[h.id] || 'untested';
+    H.push('<div class="hyp" data-h="' + esc(h.id) + '">');
+    H.push('<h4>仮説' + (i + 1) + '：' + esc(h.theme) + '</h4>');
+    H.push('<div class="f"><u>根拠（採用した規則）</u>' + chip('伝統') + esc(h.traditional_basis) + '</div>');
+    H.push('<div class="f"><u>生かされた場合</u>' + chip('仮説') + esc(h.possible_strength) + '</div>');
+    H.push('<div class="f"><u>過剰・環境不適合の場合</u>' + chip('仮説') + esc(h.overload_pattern) + '</div>');
+    H.push('<div class="f"><u>発揮されやすい条件</u>' + esc(h.enabling_conditions) + '</div>');
+    H.push('<div class="f"><u>反対仮説（別の現れ方）</u>' + chip('仮説') + esc(h.counter_hypothesis) + '</div>');
+    H.push('<div class="q"><div class="f" style="margin:0"><u>確認質問</u>' + esc(h.reality_check) + '</div></div>');
+    H.push('<div class="stat">');
+    RC.STATUS.forEach(function (s) {
+      H.push('<button data-s="' + s.key + '"' + (st === s.key ? ' class="on"' : '') + '>' + s.label + '</button>');
+    });
+    H.push('</div></div>');
+  });
+  H.push('</div>');
+
+  /* --- 6. 課題と成長実験 --- */
+  H.push('<div class="rsec"><h3>6. 課題と成長実験 <span>2週間以内に試せること</span></h3>');
+  H.push('<p style="font-size:10.5px;color:#8896b1;line-height:1.7;margin-bottom:9px">'
+    + '課題は欠点ではなく、強みの過剰使用または環境との不適合として書いています。</p>');
+  R.themes.forEach(function (t) {
+    var src = RC.hypotheses[t.id];
+    H.push('<div class="hyp"><h4>' + esc(t.theme) + '</h4>');
+    H.push('<div class="f"><u>試せる行動</u>' + esc(src.experiment) + '</div>');
+    H.push('<div class="f"><u>記録する観察指標</u>' + esc(src.metric) + '</div>');
+    H.push('<div class="f"><u>仮説が正しければ予想される変化</u>' + esc(src.expected) + '</div>');
+    H.push('<div class="f"><u>変化がなければ見直す解釈</u>' + esc(src.ifnot) + '</div></div>');
+  });
+  H.push('</div>');
+
+  /* --- 7. 中心目的の候補 --- */
+  H.push('<div class="rsec"><h3>7. 中心目的の候補 <span>事実ではなく、選べる問い</span></h3>');
+  H.push('<div class="warn">「魂の目的」「使命」「前世」は生年月日から確定できる種類の事柄ではありません。'
+    + '以下は<b>あなたが選べる中心課題の候補</b>を問いの形にしたものです。'
+    + '選んで、継続した行動で意味を与えたテーマだけが、あなたの目的になります。</div>');
+  var pq = [];
+  A.axesRanked.slice(0, 2).forEach(function (a) {
+    if (RC.PURPOSE_QUESTIONS[a.axis]) pq.push(RC.PURPOSE_QUESTIONS[a.axis]);
+  });
+  R.themes.forEach(function (t) {
+    var s = RC.hypotheses[t.id];
+    if (s && s.purpose && pq.indexOf(s.purpose) < 0) pq.push(s.purpose);
+  });
+  pq.slice(0, 3).forEach(function (q) {
+    H.push('<div class="rlead"><p>' + chip('仮説') + esc(q) + '</p></div>');
+  });
+  H.push('</div>');
+
+  /* --- 8. 判定の境界 --- */
+  H.push('<div class="rsec"><h3>8. 判定の境界 <span>確認済み／未確認／判定不能</span></h3>');
+  H.push(row(chip('確認'), inp.self
+    ? 'あなたが書いた「' + esc(inp.self.slice(0, 80)) + (inp.self.length > 80 ? '…' : '') + '」は、'
+      + '上の仮説と突き合わせる材料です。一致したものだけを' + chip('確認') + 'に移してください。'
+      + '<br><span style="font-size:10px;color:#8896b1">この判定はアプリではなくあなたが行います。仮説ごとの状態ボタンで記録できます。</span>'
+    : 'まだありません。仮説ごとの状態ボタンで、支持／反証／混合を記録できます。'));
+  H.push(row(chip('仮説'), '上の仮説はすべて未検証の状態から始まります。'
+    + '確認質問に具体例で答えられたものだけが支持されます。'));
+  H.push(row(chip('反証'), '現実と食い違った仮説は消さずに「反証あり」として残してください。'
+    + '<br><span style="font-size:10px;color:#8896b1">後付けの要素を足して辻褄を合わせると、'
+    + 'この読み全体が反証できないものになります。それは避けたい形です。</span>'));
+  R.fudo.forEach(function (f) {
+    H.push(row(chip('不能') + esc(f.what), esc(f.why)));
+  });
+  H.push('</div>');
+
+  /* --- 9. 次の観察 --- */
+  H.push('<div class="rsec"><h3>9. 次に観察すること <span>3つ以内</span></h3>');
+  R.themes.slice(0, 3).forEach(function (t, i) {
+    H.push('<div class="rlead"><p>' + (i + 1) + '. ' + esc(t.reality_check) + '</p></div>');
+  });
+  H.push('<p style="font-size:10.5px;color:#8896b1;line-height:1.7;margin-top:10px">'
+    + 'この読みは、医療・法律・採用・信用・結婚などの判断には使えません。'
+    + 'そうした判断へ誘導する内容も含めていません。</p>');
+  H.push('</div>');
+
+  document.getElementById('readbody').innerHTML = H.join('');
+  document.getElementById('readbody').scrollTop = 0;
+  readOpen = true; readEl.classList.add('open');
+}
+
+/* 仮説の状態切り替え（本人が判定する。反証も消さずに残す） */
+document.getElementById('readbody').addEventListener('click', function (e) {
+  var b = e.target.closest ? e.target.closest('.stat button') : null;
+  if (!b) return;
+  var box = b.closest('.hyp'), id = box && box.getAttribute('data-h');
+  if (!id) return;
+  var btns = box.querySelectorAll('.stat button');
+  for (var i = 0; i < btns.length; i++) btns[i].classList.remove('on');
+  b.classList.add('on');
+  statusStore[id] = b.getAttribute('data-s');
+  var inp = readForm();
+  if (inp) saveIfOptedIn(inp);
+});
+
+/* =====================================================================
+   12. 配布形態ごとの起動処理
+   -------------------------------------------------------------------
+   単一ファイル版: 何もしない（manifest も Service Worker も使わない）
+   PWA 版        : Service Worker の登録と更新バナー
+   =================================================================== */
+/*__PWA_BOOT__*/
+
+/* =====================================================================
+   13. 起動
+   =================================================================== */
+window.addEventListener('resize', resize);
+window.addEventListener('orientationchange', function () { setTimeout(resize, 220); });
+resize();
+buildSprites();
+refreshOrbits(centuriesFromMs(simMs));
+for (var q = 0; q < PLANETS.length; q++) state[PLANETS[q].key] = planetState(PLANETS[q].key, centuriesFromMs(simMs));
+rebuildTrails(simMs);
+syncCenterBar();
+lastReal = performance.now();
+requestAnimationFrame(draw);
+
+// 自己検算用に露出 (コンソールから確認できる)
+window.SolarDebug = { planetState: planetState, solveKepler: solveKepler,
+  centuriesFromMs: centuriesFromMs, state: state, PLANETS: PLANETS,
+  CAL: CAL, geoLonOfDate: geoLonOfDate, retroRate: retroRate,
+  setCenter: function (k) { setCenter(k); }, getCenter: function () { return centerKey; },
+  view: view, moonInfo: moonInfo, trails: trails, TRAIL_KEYS: TRAIL_KEYS,
+  openCal: openCal, closeCal: closeCal, updateCal: updateCal,
+  setSim: function (ms) { pinnedMs = null; offsetMs = ms - Date.now(); },
+  READ: READ, RC: RC, showReading: showReading, openBirth: openBirth,
+  isPinned: function () { return pinnedMs !== null; },
+  getPinned: function () { return pinnedMs; },
+  form: { date: eDate, time: eTime, place: ePlace, gender: eGender, self: eSelf, save: eSave },
+  apply: function () { return applyBirth(); },
+  lastReading: function () { return lastReading; },
+  statusStore: function () { return statusStore; } };
+})();
+</script>
+</body>
+</html>
