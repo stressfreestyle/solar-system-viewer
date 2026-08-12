@@ -89,16 +89,17 @@ const pwaBoot = String.raw`
       '-webkit-backdrop-filter:blur(10px);max-width:92vw';
     var msg = document.createElement('span');
     msg.textContent = '新しい版があります';
+    /* font の短縮記法に inherit は書けない（宣言ごと捨てられる）ので分けて指定する */
     var btn = document.createElement('button');
     btn.textContent = '再読み込み';
     btn.style.cssText =
-      'border:0;background:#3a63c8;color:#fff;border-radius:15px;padding:8px 14px;' +
-      'font:700 12px/1 inherit;cursor:pointer;flex:none';
+      'border:0;background:#3a63c8;color:#fff;border-radius:15px;padding:10px 15px;' +
+      'font-weight:700;font-size:12.5px;line-height:1;font-family:inherit;cursor:pointer;flex:none';
     var no = document.createElement('button');
     no.textContent = '後で';
     no.style.cssText =
-      'border:0;background:transparent;color:#93a2bd;border-radius:15px;padding:8px 6px;' +
-      'font:600 12px/1 inherit;cursor:pointer;flex:none';
+      'border:0;background:transparent;color:#93a2bd;border-radius:15px;padding:10px 8px;' +
+      'font-weight:600;font-size:12.5px;line-height:1;font-family:inherit;cursor:pointer;flex:none';
     btn.addEventListener('click', function () {
       btn.disabled = true; btn.textContent = '更新中…';
       var w = reg.waiting || reg.installing;
@@ -248,3 +249,24 @@ for (const [f, n] of list) {
   console.log('  ' + f.padEnd(30) + String(n).padStart(8) + ' bytes');
 }
 console.log('  ' + '合計'.padEnd(28) + String(total).padStart(8) + ' bytes = ' + (total / 1024).toFixed(1) + ' KB');
+
+/* ---- docs/ へ同期 ----
+   docs/ が GitHub Pages の公開ディレクトリ（git 管理下。dist/ は .gitignore 済み）。
+   ここを手作業のコピーに頼ると、修正が公開版に届かないまま放置されるので、
+   ビルドの一部として必ず同期する。.nojekyll は消さずに残す。 */
+const DOCS = path.join(ROOT, 'docs');
+if (fs.existsSync(DOCS)) {
+  fs.mkdirSync(path.join(DOCS, 'icons'), { recursive: true });
+  fs.writeFileSync(path.join(DOCS, 'index.html'), html);
+  fs.writeFileSync(path.join(DOCS, 'manifest.webmanifest'), manifestText);
+  fs.writeFileSync(path.join(DOCS, 'sw.js'), sw);
+  for (const f of ICON_FILES) {
+    fs.copyFileSync(path.join(ICONS, f), path.join(DOCS, 'icons', f));
+  }
+  if (!fs.existsSync(path.join(DOCS, '.nojekyll'))) {
+    fs.writeFileSync(path.join(DOCS, '.nojekyll'), '');
+  }
+  console.log('synced docs/  （GitHub Pages の公開ディレクトリ。コミットは行っていない）');
+} else {
+  console.log('docs/ が無いので同期をとばした');
+}

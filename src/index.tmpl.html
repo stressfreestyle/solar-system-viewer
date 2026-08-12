@@ -51,7 +51,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#05060c;
   backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);white-space:nowrap}
 #cname b{color:#8fb4ff;font-weight:700}
 .cbtn{border:1px solid rgba(255,255,255,.15);background:rgba(20,26,46,.8);color:#cfdcf5;
-  border-radius:18px;padding:6px 11px;font:700 12px/1.25 inherit;cursor:pointer;white-space:nowrap;
+  border-radius:18px;padding:6px 11px;font-weight:700;font-size:12px;line-height:1.25;font-family:inherit;cursor:pointer;white-space:nowrap;
   backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
 .cbtn:active{background:rgba(60,80,140,.85)}
 .cbtn.hot{background:#3a63c8;border-color:#5f85e0;color:#fff}
@@ -64,11 +64,11 @@ html,body{width:100%;height:100%;overflow:hidden;background:#05060c;
 .row{display:flex;align-items:center;gap:9px}
 .seg{display:flex;flex:1;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.11);
   border-radius:11px;padding:3px;gap:3px}
-.seg button{flex:1;border:0;background:transparent;color:#93a2bd;font:600 12.5px/1 inherit;
+.seg button{flex:1;border:0;background:transparent;color:#93a2bd;font-weight:600;font-size:12.5px;line-height:1;font-family:inherit;
   padding:11px 4px;border-radius:8px;transition:background .18s,color .18s;cursor:pointer}
 .seg button.on{background:#3a63c8;color:#fff;box-shadow:0 1px 8px rgba(58,99,200,.5)}
 .btn{border:1px solid rgba(255,255,255,.13);background:rgba(255,255,255,.07);color:#dfe6f2;
-  font:600 12.5px/1 inherit;padding:12px 13px;border-radius:11px;cursor:pointer;white-space:nowrap}
+  font-weight:600;font-size:12.5px;line-height:1;font-family:inherit;padding:12px 13px;border-radius:11px;cursor:pointer;white-space:nowrap}
 .btn:active{background:rgba(255,255,255,.18)}
 #speedwrap{margin-top:11px}
 #speedhead{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:3px}
@@ -182,21 +182,42 @@ details.sec>summary em{font-style:normal;font-weight:600;font-size:11px;color:#9
 .bl{display:block;font-size:11px;font-weight:600;color:#9fb0cd;margin:12px 0 5px;letter-spacing:.03em}
 .req{background:#3a63c8;color:#fff;border-radius:5px;padding:1px 5px;font-size:9px;margin-left:4px}
 .opt{background:rgba(255,255,255,.1);color:#93a2bd;border-radius:5px;padding:1px 5px;font-size:9px;margin-left:4px}
-#birth input[type=date],#birth input[type=time],#birth input[type=text],#birth textarea{
+#birth input[type=date],#birth input[type=text],#birth textarea{
   width:100%;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);
-  border-radius:10px;color:#e6edfa;font:500 15px/1.4 inherit;padding:11px 12px;
+  border-radius:10px;color:#e6edfa;font-weight:500;font-size:16px;line-height:1.4;font-family:inherit;padding:14px 12px;min-height:52px;
   -webkit-appearance:none;appearance:none}
-#birth textarea{resize:vertical;font-size:13px}
+#birth textarea{resize:vertical;font-size:14px;min-height:0}
+
+/* 出生時刻の 時:分 セレクタ。
+   モーダルのピッカーを出さず、選んだ値がその場に見えたままになる形にしている。
+   フォントは16px（iOS でフォーカス時にページが拡大されるのを防ぐため）。 */
+.trow{display:flex;align-items:center;gap:9px}
+.tsep{flex:none;font-size:18px;font-weight:700;color:#8c9ab5}
+.sel{position:relative;flex:1;min-width:0;display:block}
+.sel::after{content:'';position:absolute;right:14px;top:50%;width:8px;height:8px;
+  border-right:2px solid #9fb0cd;border-bottom:2px solid #9fb0cd;
+  transform:translateY(-72%) rotate(45deg);pointer-events:none}
+.sel select{width:100%;height:54px;background:rgba(255,255,255,.07);
+  border:1px solid rgba(255,255,255,.14);border-radius:10px;color:#e6edfa;
+  font-weight:600;font-size:16px;line-height:1.2;font-family:inherit;padding:0 34px 0 14px;cursor:pointer;
+  -webkit-appearance:none;appearance:none}
+.sel select:focus{outline:none;border-color:#5f85e0;background:rgba(90,120,200,.16)}
+.sel select option{background:#141a2c;color:#e6edfa}
+.tstat{margin-top:9px;font-size:12.5px;font-weight:600;color:#a8c4f0;
+  background:rgba(90,130,220,.12);border:1px solid rgba(120,160,240,.24);
+  border-radius:9px;padding:9px 11px;line-height:1.5}
+.tstat.none{color:#93a2bd;background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.1)}
+.tstat.warn{color:#ffd89a;background:rgba(255,190,90,.12);border-color:rgba(255,190,90,.4)}
 .bnote{font-size:10px;line-height:1.6;color:#7d8ca8;margin-top:6px}
 .bchk{display:flex;align-items:flex-start;gap:8px;margin-top:16px;font-size:12px;color:#c3cee1;line-height:1.5}
 .bchk input{width:20px;height:20px;flex:none;accent-color:#3a63c8;margin-top:1px}
 .brow{display:flex;gap:9px;margin-top:16px}
-.bgo,.bsec{flex:1;border:0;border-radius:12px;padding:14px 8px;font:700 13.5px/1 inherit;cursor:pointer}
+.bgo,.bsec{flex:1;border:0;border-radius:12px;padding:14px 8px;font-weight:700;font-size:13.5px;line-height:1;font-family:inherit;cursor:pointer}
 .bgo{background:#3a63c8;color:#fff}
 .bsec{background:rgba(255,255,255,.09);color:#dbe4f5;border:1px solid rgba(255,255,255,.15)}
 .bgo:active,.bsec:active{opacity:.75}
 .bdel{width:100%;margin-top:10px;border:1px solid rgba(255,120,120,.3);background:rgba(255,90,90,.09);
-  color:#f0a8a8;border-radius:11px;padding:11px;font:600 12px/1 inherit;cursor:pointer}
+  color:#f0a8a8;border-radius:11px;padding:11px;font-weight:600;font-size:12px;line-height:1;font-family:inherit;cursor:pointer}
 
 /* ---- 読みシート ---- */
 #readbody{overflow-y:auto;-webkit-overflow-scrolling:touch;
@@ -238,7 +259,7 @@ details.sec>summary em{font-style:normal;font-weight:600;font-size:11px;color:#9
   border-radius:0 7px 7px 0;padding:8px 10px;margin:8px 0}
 .stat{display:flex;gap:5px;margin-top:10px;flex-wrap:wrap}
 .stat button{flex:1;min-width:64px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.05);
-  color:#9fb0cd;border-radius:8px;padding:8px 4px;font:600 10.5px/1 inherit;cursor:pointer}
+  color:#9fb0cd;border-radius:8px;padding:8px 4px;font-weight:600;font-size:10.5px;line-height:1;font-family:inherit;cursor:pointer}
 .stat button.on{background:#3a63c8;border-color:#5f85e0;color:#fff}
 .stat button.on[data-s=contradicted]{background:#a83c3c;border-color:#c85a5a}
 .stat button.on[data-s=supported]{background:#2f7a4a;border-color:#4a9a68}
@@ -272,11 +293,18 @@ details.sec>summary em{font-style:normal;font-weight:600;font-size:11px;color:#9
   </div>
   <div class="bbody">
     <label class="bl">生年月日 <span class="req">必須</span></label>
-    <input type="date" id="bDate" value="1990-07-23">
+    <input type="date" id="bDate" value="1990-07-23" min="1800-01-01" max="2100-12-31">
 
     <label class="bl">出生時刻 <span class="opt">任意</span></label>
-    <input type="time" id="bTime">
-    <p class="bnote">時刻を空欄にすると、時柱・真太陽時・節入り境界の判定は「省略した」と明記して出しません。推測値は作りません。</p>
+    <!-- 時計ピッカー（input type=time）は端末ごとに確定の作法が違って詰まるので、
+         その場で値が見えたままになる select 2つにしてある。 -->
+    <div class="trow">
+      <span class="sel"><select id="bHour" aria-label="出生時刻の時"></select></span>
+      <span class="tsep">:</span>
+      <span class="sel"><select id="bMin" aria-label="出生時刻の分"></select></span>
+    </div>
+    <div id="tstat" class="tstat">出生時刻: 未入力（時柱は出しません）</div>
+    <p class="bnote">時刻を未入力のままにすると、時柱・真太陽時・節入り境界の判定は「省略した」と明記して出しません。推測値は作りません。</p>
 
     <label class="bl">出生地 <span class="opt">任意</span></label>
     <input type="text" id="bPlace" placeholder="例: 東京都" autocomplete="off">
@@ -820,6 +848,10 @@ var speedIdx = 0, offsetMs = 0, simMs = Date.now(), lastReal = performance.now()
    1倍速ならその瞬間で止まり、倍速にすればそこから動き出す。
    「今」ボタンで解除する。 */
 var pinnedMs = null;
+/* 出生時刻が分かっている誕生時ロックかどうか。時刻不明のときは表示上
+   便宜的に正午を使うが、それを「誕生時刻」として見せると推測値を
+   本人に信じさせることになるので、バッジの文言で区別する。 */
+var pinnedHasTime = false;
 
 /* =====================================================================
    6. 星空 (オフスクリーンに1回だけ焼く)
@@ -1431,7 +1463,8 @@ function updateHUD() {
     + WD[d.getDay()] + ') ' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
   var live = pinnedMs === null && speedIdx === 0 && Math.abs(offsetMs) < 1500;
   if (pinnedMs !== null) {
-    elLive.textContent = speedIdx === 0 ? '誕生時' : '誕生時 ' + SPEEDS[speedIdx].l;
+    var bl = pinnedHasTime ? '誕生時' : '誕生日（時刻不明・正午で表示）';
+    elLive.textContent = speedIdx === 0 ? bl : bl + ' ' + SPEEDS[speedIdx].l;
     elLive.className = 'birth';
   } else {
     elLive.textContent = live ? '現在' : SPEEDS[speedIdx].l;
@@ -1796,7 +1829,7 @@ slider.addEventListener('input', applySpeed);
 applySpeed();
 
 document.getElementById('bNow').addEventListener('click', function () {
-  pinnedMs = null; offsetMs = 0; simMs = Date.now();     // 誕生時ロックも解除
+  pinnedMs = null; pinnedHasTime = false; offsetMs = 0; simMs = Date.now();     // 誕生時ロックも解除
   slider.value = 0; applySpeed();
 });
 
@@ -1808,7 +1841,9 @@ document.getElementById('bNow').addEventListener('click', function () {
    =================================================================== */
 var LS_KEY = 'solar.birth.v1';
 var birthEl = document.getElementById('birth'), birthOpen = false;
-var eDate = document.getElementById('bDate'), eTime = document.getElementById('bTime'),
+var eDate = document.getElementById('bDate'),
+    eHour = document.getElementById('bHour'), eMin = document.getElementById('bMin'),
+    eTstat = document.getElementById('tstat'),
     ePlace = document.getElementById('bPlace'), eGender = document.getElementById('bGender'),
     eSelf = document.getElementById('bSelf'), eSave = document.getElementById('bSave');
 var lastReading = null, statusStore = {};
@@ -1820,15 +1855,61 @@ document.getElementById('bBirth').addEventListener('click', function () {
 });
 document.getElementById('birthClose').addEventListener('click', closeBirth);
 
+/* 時・分のプルダウンを作る。先頭は必ず「—（不明）」で、これが既定。
+   分は1分刻みで60個すべて出す（節入り境界の判定に効くので間引かない）。 */
+(function buildTimeSelects() {
+  function fill(sel, n, label) {
+    var o = document.createElement('option');
+    o.value = ''; o.textContent = '— ' + label + '（不明）';
+    sel.appendChild(o);
+    for (var i = 0; i < n; i++) {
+      var x = document.createElement('option');
+      x.value = String(i); x.textContent = pad(i) + label;
+      sel.appendChild(x);
+    }
+    sel.value = '';
+  }
+  fill(eHour, 24, '時');
+  fill(eMin, 60, '分');
+})();
+
+/* 時刻の状態。
+     none    … 時も分も未選択（＝時刻不明。今までの「空欄」と同じ扱い）
+     partial … 片方だけ選ばれている（推測値を作らないので、これは不完全として扱う）
+     ok      … 両方選ばれている */
+function timeState() {
+  var h = eHour.value, m = eMin.value;
+  if (h === '' && m === '') return { state: 'none' };
+  if (h === '' || m === '') return { state: 'partial', missing: h === '' ? eHour : eMin };
+  return { state: 'ok', hh: +h, mi: +m };
+}
+/* 選択中の値を常に文字で見せる。いま何が入っているのかを迷わせない。 */
+function updateTimeStatus(warn) {
+  var ts = timeState();
+  if (ts.state === 'ok') {
+    eTstat.className = 'tstat';
+    eTstat.textContent = '出生時刻: ' + pad(ts.hh) + ':' + pad(ts.mi);
+  } else if (ts.state === 'partial') {
+    eTstat.className = 'tstat warn';
+    eTstat.textContent = '時と分の両方を選んでください（片方だけでは時刻として扱えません）';
+  } else {
+    eTstat.className = 'tstat none' + (warn ? ' warn' : '');
+    eTstat.textContent = '出生時刻: 未入力（時柱は出しません）';
+  }
+}
+eHour.addEventListener('change', function () { updateTimeStatus(); });
+eMin.addEventListener('change', function () { updateTimeStatus(); });
+updateTimeStatus();
+
 function readForm() {
   var d = eDate.value;
   if (!d) return null;
   var parts = d.split('-');
-  var t = eTime.value, hh = 0, mi = 0, hasTime = false;
-  if (t) { var tp = t.split(':'); hh = +tp[0]; mi = +tp[1]; hasTime = true; }
+  var ts = timeState();
+  var hasTime = ts.state === 'ok';
   return {
     y: +parts[0], m: +parts[1], d: +parts[2],
-    hasTime: hasTime, hh: hh, mi: mi,
+    hasTime: hasTime, hh: hasTime ? ts.hh : 0, mi: hasTime ? ts.mi : 0,
     place: ePlace.value.trim() || null,
     gender: eGender.value.trim() || null,
     self: eSelf.value.trim() || null
@@ -1839,9 +1920,20 @@ function birthMs(inp) {
        - 9 * 3600000;                                   // JST として解釈する
 }
 function applyBirth() {
+  /* 片方だけ選ばれている状態では先へ進めない。
+     ここで足りない側を0で埋めると「推測値を作らない」という設計が崩れるので、
+     埋めずに本人に選んでもらう。 */
+  var ts = timeState();
+  if (ts.state === 'partial') {
+    updateTimeStatus();
+    eTstat.scrollIntoView({ block: 'center' });
+    try { ts.missing.focus(); } catch (e) {}
+    return null;
+  }
   var inp = readForm();
   if (!inp) { alert('生年月日を入力してください。'); return null; }
   pinnedMs = birthMs(inp);
+  pinnedHasTime = inp.hasTime;
   simMs = pinnedMs;
   slider.value = 0; applySpeed();
   saveIfOptedIn(inp);
@@ -1868,7 +1960,8 @@ function saveIfOptedIn(inp) {
 document.getElementById('bClear').addEventListener('click', function () {
   try { localStorage.removeItem(LS_KEY); } catch (e) {}
   statusStore = {}; eSave.checked = false;
-  ePlace.value = ''; eGender.value = ''; eSelf.value = ''; eTime.value = '';
+  ePlace.value = ''; eGender.value = ''; eSelf.value = '';
+  eHour.value = ''; eMin.value = ''; updateTimeStatus();
   alert('この端末に保存された入力と検証状態を削除しました。');
 });
 (function restore() {
@@ -1879,7 +1972,8 @@ document.getElementById('bClear').addEventListener('click', function () {
     if (!o || !o.save || !o.input) return;
     var i = o.input;
     eDate.value = i.y + '-' + pad(i.m) + '-' + pad(i.d);
-    if (i.hasTime) eTime.value = pad(i.hh) + ':' + pad(i.mi);
+    if (i.hasTime) { eHour.value = String(i.hh); eMin.value = String(i.mi); }
+    updateTimeStatus();
     ePlace.value = i.place || ''; eGender.value = i.gender || ''; eSelf.value = i.self || '';
     eSave.checked = true;
     statusStore = o.status || {};
@@ -2136,11 +2230,18 @@ window.SolarDebug = { planetState: planetState, solveKepler: solveKepler,
   setCenter: function (k) { setCenter(k); }, getCenter: function () { return centerKey; },
   view: view, moonInfo: moonInfo, trails: trails, TRAIL_KEYS: TRAIL_KEYS,
   openCal: openCal, closeCal: closeCal, updateCal: updateCal,
-  setSim: function (ms) { pinnedMs = null; offsetMs = ms - Date.now(); },
+  setSim: function (ms) { pinnedMs = null; pinnedHasTime = false; offsetMs = ms - Date.now(); },
   READ: READ, RC: RC, showReading: showReading, openBirth: openBirth,
   isPinned: function () { return pinnedMs !== null; },
   getPinned: function () { return pinnedMs; },
-  form: { date: eDate, time: eTime, place: ePlace, gender: eGender, self: eSelf, save: eSave },
+  form: { date: eDate, hour: eHour, min: eMin, place: ePlace, gender: eGender, self: eSelf, save: eSave },
+  setTime: function (hh, mi) {
+    eHour.value = (hh === null || hh === undefined) ? '' : String(hh);
+    eMin.value = (mi === null || mi === undefined) ? '' : String(mi);
+    updateTimeStatus();
+  },
+  timeState: function () { return timeState(); },
+  timeStatusText: function () { return eTstat.textContent; },
   apply: function () { return applyBirth(); },
   lastReading: function () { return lastReading; },
   statusStore: function () { return statusStore; } };

@@ -10,7 +10,7 @@
      {type:'SKIP_WAITING'} が来たときだけ実行する（更新バナー用） */
 'use strict';
 
-var VERSION = 'b5e16dbd7893';
+var VERSION = '32418e001735';
 var PREFIX = 'solar-';
 var CACHE = PREFIX + VERSION;
 var ASSETS = [
