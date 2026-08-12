@@ -56,6 +56,29 @@ node make-artifact.js  # → solar-system.artifact.html（build.js の出力を�
 node test/run-all.js   # 全テスト
 ```
 
+### 公開先（GitHub Pages）
+
+**https://stressfreestyle.github.io/solar-system-viewer/**
+
+リポジトリ: https://github.com/stressfreestyle/solar-system-viewer （公開）
+
+GitHub Pages の公開元はリポジトリ直下か `/docs` しか選べないため、**`dist/` の中身を
+`docs/` にコピーしたものをコミットしている**。`dist/` 自体は `.gitignore` で除外。
+更新するときは:
+
+```bash
+node build.js && node make-pwa.js
+rm -rf docs && cp -R dist docs && touch docs/.nojekyll
+git add -A && git commit -m "更新内容" && git push
+```
+
+`docs/.nojekyll` は Jekyll の処理を止めるため。消さないこと。
+反映まで1〜2分かかる。`gh api repos/stressfreestyle/solar-system-viewer/pages --jq .status`
+が `built` になれば完了。
+
+**`LOCAL_NOTES.md` と `dist/` と `solar-system.artifact.html` は公開していない**
+（`.gitignore` 参照）。Artifactの非公開URLをリポジトリに載せないため。
+
 `build.js` と `make-pwa.js` は出力前に、外部参照・通信API・外部スクリプト・
 絶対パス参照・スクリプト構文エラーを機械的に検査して、見つかったら落ちる。
 
