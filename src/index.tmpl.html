@@ -233,7 +233,7 @@ details.sec>summary em{font-style:normal;font-weight:600;font-size:11px;color:#9
 .c伝統{background:rgba(190,160,90,.2);color:#e8cf9a;border:1px solid rgba(190,160,90,.42)}
 .c仮説{background:rgba(120,160,240,.2);color:#b6ccff;border:1px solid rgba(120,160,240,.42)}
 .c確認{background:rgba(120,210,120,.2);color:#a8e8a8;border:1px solid rgba(120,210,120,.42)}
-.c反証{background:rgba(240,120,120,.2);color:#ffb3b3;border:1px solid rgba(240,120,120,.42)}
+.c別面{background:rgba(215,150,90,.2);color:#f0c48a;border:1px solid rgba(215,150,90,.42)}
 .c不能{background:rgba(150,150,165,.18);color:#bcc2d0;border:1px solid rgba(150,150,165,.4)}
 .rlead{background:linear-gradient(140deg,rgba(58,99,200,.26),rgba(120,70,190,.18));
   border:1px solid rgba(150,180,255,.26);border-radius:14px;padding:13px 15px;margin-bottom:8px}
@@ -261,9 +261,9 @@ details.sec>summary em{font-style:normal;font-weight:600;font-size:11px;color:#9
 .stat button{flex:1;min-width:64px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.05);
   color:#9fb0cd;border-radius:8px;padding:8px 4px;font-weight:600;font-size:10.5px;line-height:1;font-family:inherit;cursor:pointer}
 .stat button.on{background:#3a63c8;border-color:#5f85e0;color:#fff}
-.stat button.on[data-s=contradicted]{background:#a83c3c;border-color:#c85a5a}
-.stat button.on[data-s=supported]{background:#2f7a4a;border-color:#4a9a68}
-.stat button.on[data-s=mixed]{background:#8a6a2a;border-color:#a8863f}
+.stat button.on[data-s=onthisface]{background:#2f7a4a;border-color:#4a9a68}
+.stat button.on[data-s=otherface]{background:#8a5a2a;border-color:#b07c3c}
+.stat button.on[data-s=unclear]{background:#4a5570;border-color:#6b7796}
 .warn{background:rgba(255,190,90,.09);border:1px solid rgba(255,190,90,.24);
   border-radius:10px;padding:11px 13px;font-size:10.5px;line-height:1.7;color:#e6cfa4;margin-bottom:14px}
 .warn b{color:#ffd89a}
@@ -1977,6 +1977,11 @@ document.getElementById('bClear').addEventListener('click', function () {
     ePlace.value = i.place || ''; eGender.value = i.gender || ''; eSelf.value = i.self || '';
     eSave.checked = true;
     statusStore = o.status || {};
+    /* 旧い状態キー（supported/contradicted/mixed）を新しい面の記録へ移す。
+       本人が見た事実を失わせないため、捨てずに読み替える。 */
+    for (var k in statusStore) {
+      if (RC.STATUS_MIGRATE[statusStore[k]]) statusStore[k] = RC.STATUS_MIGRATE[statusStore[k]];
+    }
   } catch (e) {}
 })();
 
@@ -2009,13 +2014,16 @@ function showReading(inp) {
   document.getElementById('readsub').textContent =
     inp.y + '年' + inp.m + '月' + inp.d + '日' + (inp.hasTime ? ' ' + pad(inp.hh) + ':' + pad(inp.mi) : '（時刻なし）');
 
-  /* --- 冒頭の注意書き（主従の固定） --- */
-  H.push('<div class="warn"><b>この読みの立て方。</b>'
-    + 'あなたの生活・履歴・環境・選択・行動が<b>主</b>で、以下の暦記号・星・宿・解釈文は'
-    + 'すべて<b>従</b>です。生年月日から見えない本質や未来を決めることはできません。'
-    + 'ここに出るのは<b>現実で確かめるための問い</b>であって、当たり外れを競うものではありません。'
-    + '当たっているかどうかは、あなたの具体的な出来事だけが決めます。'
-    + 'この読みでは、当たり外れを数値にすることはしません。</div>');
+  /* --- 冒頭の注意書き（三層の主従を固定する） --- */
+  H.push('<div class="warn"><b>この読みの立て方。法則が主です。</b><br>'
+    + '生年月日・暦記号・星の配置は、法則が現れた一つの面（<b>従</b>）。<br>'
+    + 'あなたの生活・履歴・環境・選択・行動も、法則が展開したもう一つの面（<b>従</b>）。<br>'
+    + 'この読みは、法則を星の配置に照らして、生活の側に何が展開しているかを'
+    + '読み解こうとするものです。<br><br>'
+    + '読みと実際の出来事が食い違って見えるときは、法則が外れたのではなく、'
+    + '展開が別の面に出ているか、まだその面が見えていないと考えます。'
+    + 'どの面に出ているかは、あなたが実際の出来事で確かめるほかありません。'
+    + '当たり外れを数値にすることはしません。</div>');
 
   /* --- 1. 結論 --- */
   H.push('<div class="rsec"><h3>1. 結論 <span>検証する価値のあるテーマ（3つ以内）</span></h3>');
@@ -2062,7 +2070,10 @@ function showReading(inp) {
   /* --- 4. 伝統モデル上の構造 --- */
   H.push('<div class="rsec"><h3>4. 伝統モデル上の構造 <span>採用流派の固定対応</span></h3>');
   H.push('<p style="font-size:10.5px;color:#8896b1;line-height:1.7;margin-bottom:9px">'
-    + '以下はすべて「モデル内での位置」であって、あなたという人の事実ではありません。</p>');
+    + '以下は、法則が<b>星の配置という面</b>に現れたときの位置です。'
+    + 'あなたの生活という面に、これがそのままの形で出ているとは限りません。'
+    + '同じ法則でも、面が違えば現れ方が変わります。'
+    + 'どう出ているかは、この先の仮説を手がかりに、実際の出来事で確かめていくものです。</p>');
   A.axes.forEach(function (a) {
     H.push(row(chip('伝統') + a.axis, a.label + '：' + a.count + '個'
       + (a.from.length ? '<br><span style="font-size:10px;color:#8896b1">' + esc(a.from.join('、')) + '</span>' : '')));
@@ -2104,7 +2115,7 @@ function showReading(inp) {
   H.push('</div>');
 
   /* --- 5. 人物仮説 --- */
-  H.push('<div class="rsec"><h3>5. 人物理解の仮説 <span>反対仮説と確認質問が必ず付きます</span></h3>');
+  H.push('<div class="rsec"><h3>5. 生活の面で何が展開しているか <span>どの面に出ているかを見に行くための手がかり</span></h3>');
   R.hypotheses.forEach(function (h, i) {
     var st = statusStore[h.id] || 'untested';
     H.push('<div class="hyp" data-h="' + esc(h.id) + '">');
@@ -2113,8 +2124,8 @@ function showReading(inp) {
     H.push('<div class="f"><u>生かされた場合</u>' + chip('仮説') + esc(h.possible_strength) + '</div>');
     H.push('<div class="f"><u>過剰・環境不適合の場合</u>' + chip('仮説') + esc(h.overload_pattern) + '</div>');
     H.push('<div class="f"><u>発揮されやすい条件</u>' + esc(h.enabling_conditions) + '</div>');
-    H.push('<div class="f"><u>反対仮説（別の現れ方）</u>' + chip('仮説') + esc(h.counter_hypothesis) + '</div>');
-    H.push('<div class="q"><div class="f" style="margin:0"><u>確認質問</u>' + esc(h.reality_check) + '</div></div>');
+    H.push('<div class="f"><u>別の面での現れ方</u>' + chip('仮説') + esc(h.counter_hypothesis) + '</div>');
+    H.push('<div class="q"><div class="f" style="margin:0"><u>どの面に出ているかを見る問い</u>' + esc(h.reality_check) + '</div></div>');
     H.push('<div class="stat">');
     RC.STATUS.forEach(function (s) {
       H.push('<button data-s="' + s.key + '"' + (st === s.key ? ' class="on"' : '') + '>' + s.label + '</button>');
@@ -2132,8 +2143,8 @@ function showReading(inp) {
     H.push('<div class="hyp"><h4>' + esc(t.theme) + '</h4>');
     H.push('<div class="f"><u>試せる行動</u>' + esc(src.experiment) + '</div>');
     H.push('<div class="f"><u>記録する観察指標</u>' + esc(src.metric) + '</div>');
-    H.push('<div class="f"><u>仮説が正しければ予想される変化</u>' + esc(src.expected) + '</div>');
-    H.push('<div class="f"><u>変化がなければ見直す解釈</u>' + esc(src.ifnot) + '</div></div>');
+    H.push('<div class="f"><u>この面に出ていれば予想される変化</u>' + esc(src.expected) + '</div>');
+    H.push('<div class="f"><u>変化がなければ、次に見る面</u>' + esc(src.ifnot) + '</div></div>');
   });
   H.push('</div>');
 
@@ -2155,18 +2166,21 @@ function showReading(inp) {
   });
   H.push('</div>');
 
-  /* --- 8. 判定の境界 --- */
-  H.push('<div class="rsec"><h3>8. 判定の境界 <span>確認済み／未確認／判定不能</span></h3>');
+  /* --- 8. どの面まで見えているか --- */
+  H.push('<div class="rsec"><h3>8. どの面まで見えているか <span>見た／まだ見ていない／算出できない</span></h3>');
   H.push(row(chip('確認'), inp.self
     ? 'あなたが書いた「' + esc(inp.self.slice(0, 80)) + (inp.self.length > 80 ? '…' : '') + '」は、'
-      + '上の仮説と突き合わせる材料です。一致したものだけを' + chip('確認') + 'に移してください。'
-      + '<br><span style="font-size:10px;color:#8896b1">この判定はアプリではなくあなたが行います。仮説ごとの状態ボタンで記録できます。</span>'
-    : 'まだありません。仮説ごとの状態ボタンで、支持／反証／混合を記録できます。'));
-  H.push(row(chip('仮説'), '上の仮説はすべて未検証の状態から始まります。'
-    + '確認質問に具体例で答えられたものだけが支持されます。'));
-  H.push(row(chip('反証'), '現実と食い違った仮説は消さずに「反証あり」として残してください。'
-    + '<br><span style="font-size:10px;color:#8896b1">後付けの要素を足して辻褄を合わせると、'
-    + 'この読み全体が反証できないものになります。それは避けたい形です。</span>'));
+      + '上の手がかりと突き合わせる材料です。生活の面に出ていると見えたものを'
+      + chip('確認') + 'に移してください。'
+      + '<br><span style="font-size:10px;color:#8896b1">この記録はアプリではなくあなたが付けます。各項目の状態ボタンで残せます。</span>'
+    : 'まだありません。各項目の状態ボタンで、どの面に出ているかを記録できます。'));
+  H.push(row(chip('仮説'), '上の項目はすべて「まだ見ていない」から始まります。'
+    + '問いに具体例で答えられたものが、この面に出ていると分かります。'));
+  H.push(row(chip('別面'), 'いま見ている面に出ていなかったものは、消さずに「別の面に出ている」として残してください。'
+    + '<br><span style="font-size:10px;color:#8896b1">それは外れた記録ではなく、'
+    + 'どこを探せばよいかが一つ分かった記録です。'
+    + '同じ法則でも、現れる面が変われば形が変わります。'
+    + 'ずれているのは法則ではなく、いまどの面を見ているかです。</span>'));
   R.fudo.forEach(function (f) {
     H.push(row(chip('不能') + esc(f.what), esc(f.why)));
   });
