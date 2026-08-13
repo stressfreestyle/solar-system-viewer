@@ -233,7 +233,7 @@ details.sec>summary em{font-style:normal;font-weight:600;font-size:calc(11px * v
   letter-spacing:.04em;vertical-align:1.5px;margin-right:5px;white-space:nowrap}
 .c計算{background:rgba(90,190,150,.2);color:#8fe3bd;border:1px solid rgba(90,190,150,.42)}
 .c伝統{background:rgba(190,160,90,.2);color:#e8cf9a;border:1px solid rgba(190,160,90,.42)}
-.c仮説{background:rgba(120,160,240,.2);color:#b6ccff;border:1px solid rgba(120,160,240,.42)}
+.c読み{background:rgba(120,160,240,.2);color:#b6ccff;border:1px solid rgba(120,160,240,.42)}
 .c確認{background:rgba(120,210,120,.2);color:#a8e8a8;border:1px solid rgba(120,210,120,.42)}
 .c別面{background:rgba(215,150,90,.2);color:#f0c48a;border:1px solid rgba(215,150,90,.42)}
 .c不能{background:rgba(150,150,165,.18);color:#bcc2d0;border:1px solid rgba(150,150,165,.4)}
@@ -269,6 +269,29 @@ details.sec>summary em{font-style:normal;font-weight:600;font-size:calc(11px * v
 .warn{background:rgba(255,190,90,.09);border:1px solid rgba(255,190,90,.24);
   border-radius:10px;padding:11px 13px;font-size:calc(10.5px * var(--tscale));line-height:1.7;color:#e6cfa4;margin-bottom:14px}
 .warn b{color:#ffd89a}
+
+/* ---- 断定調の読みブロック（第7フェーズ） ----
+   断定文には必ず根拠（命式のどの記号から来たか）を上に付ける。
+   .rd = 1つの読み、.src = 根拠、.say = 断定本文、.beat = 短い断定の畳みかけ */
+.rd{border:1px solid rgba(255,255,255,.1);border-radius:13px;padding:12px 14px;margin-bottom:10px;
+  background:rgba(255,255,255,.035)}
+.rd .src{font-size:calc(10.5px * var(--tscale));line-height:1.6;color:#9aa9c4;
+  padding-bottom:8px;margin-bottom:9px;border-bottom:1px solid rgba(255,255,255,.075)}
+.rd .say{font-size:calc(12.5px * var(--tscale));line-height:1.85;color:#e4ecfb}
+.rd .say+.say{margin-top:9px}
+.rd em{font-style:normal;color:#fff;font-weight:700}
+.beat{margin:11px 0;padding-left:11px;border-left:2px solid rgba(150,180,255,.45)}
+.beat span{display:block;font-size:calc(14px * var(--tscale));font-weight:700;line-height:1.55;color:#eaf1ff}
+.turn{margin-top:10px;padding-top:9px;border-top:1px solid rgba(255,255,255,.075);
+  font-size:calc(12px * var(--tscale));line-height:1.8;color:#d5dff2}
+.one{background:linear-gradient(140deg,rgba(58,99,200,.3),rgba(120,70,190,.2));
+  border:1px solid rgba(150,180,255,.3);border-radius:15px;padding:16px 17px}
+.one p{font-size:calc(14.5px * var(--tscale));font-weight:700;line-height:1.75;color:#f0f5ff}
+.one p+p{margin-top:9px}
+.face{margin-top:11px;padding-top:10px;border-top:1px dashed rgba(255,255,255,.13)}
+.face .fq{font-size:calc(11px * var(--tscale));line-height:1.7;color:#9db4dd;margin-bottom:7px}
+.face .fq u{display:block;text-decoration:none;font-size:calc(9.5px * var(--tscale));font-weight:700;
+  color:#8896b1;letter-spacing:.05em;margin-bottom:3px}
 
 /* JS が組み立てる本文の共通クラス（インライン style をやめてここへ集約し、
    倍率の取りこぼしが起きないようにしている） */
@@ -423,7 +446,7 @@ details.sec>summary em{font-style:normal;font-weight:600;font-size:calc(11px * v
 
 <div id="read">
   <div id="readhead">
-    <div><div id="readtitle">人物理解の仮説</div>
+    <div><div id="readtitle">人物理解</div>
       <div id="readsub">—</div></div>
     <button class="xbtn" id="readClose">&times;</button>
   </div>
@@ -2084,12 +2107,16 @@ document.getElementById('bClear').addEventListener('click', function () {
 })();
 
 /* =====================================================================
-   11c. 読みの描画
+   11c. 読みの描画（第7フェーズ：断定調・10節構成）
    -------------------------------------------------------------------
-   出力順序は指示書8 / output-template.md に従う:
-     1 結論 → 2 入力と計算条件 → 3 暦計算上の事実 → 4 伝統モデル上の構造
-     → 5 人物仮説 → 6 課題と成長実験 → 7 中心目的の候補
-     → 8 確認済み/未確認/判定不能 → 9 次に観察すること
+     1 基本命式 → 2 四柱推命で見る本質 → 3 五行の偏り
+     → 4 算命学で見る本質 → 5 天中殺 → 6 宿曜道で見る本質
+     → 7 真理構造からの統合 → 8 向いている場・役割
+     → 9 一言でまとめると → 10 見えていない部分
+
+   断定文には必ず根拠（命式のどの記号から来たか）を添える。
+   根拠から導けないことは書かない。人体星図の配置と宿の人物像は
+   確信をもって固定できないため、ここだけは断定せず [不能] に置く。
    =================================================================== */
 var readEl = document.getElementById('read'), readOpen = false;
 function closeRead() { readOpen = false; readEl.classList.remove('open'); }
@@ -2103,11 +2130,45 @@ function esc(s) {
 function chip(t) { return '<span class="chip c' + t + '">' + t + '</span>'; }
 function row(k, v) { return '<div class="rrow"><i>' + k + '</i><b>' + v + '</b></div>'; }
 
+/* 断定の畳みかけ（短い文を改行で重ねる） */
+function beat(words) {
+  var s = '<div class="beat">';
+  for (var i = 0; i < words.length; i++) s += '<span>' + esc(words[i]) + '。</span>';
+  return s + '</div>';
+}
+/* 1つの読みブロック。src（根拠）は必ず付ける。 */
+function rd(src, says, turn) {
+  var s = '<div class="rd"><div class="src">' + src + '</div>';
+  for (var i = 0; i < says.length; i++) s += says[i];
+  if (turn) {
+    var t = (typeof turn === 'string') ? [turn] : turn;
+    for (var j = 0; j < t.length; j++) s += '<div class="turn">' + t[j] + '</div>';
+  }
+  return s + '</div>';
+}
+function say(t) { return '<div class="say">' + t + '</div>'; }
+
+/* 面の見え方を記録する枠。断定した節ごとに1つ置く。
+   読みの当否を採点するのではなく、いま見ている面に出ているかを本人が残す。 */
+function faceBox(id, question) {
+  var st = statusStore[id] || 'untested';
+  var s = '<div class="face" data-h="' + esc(id) + '">'
+        + '<div class="fq"><u>この面に出ているかを見る問い</u>' + esc(question) + '</div>'
+        + '<div class="stat">';
+  RC.STATUS.forEach(function (x) {
+    s += '<button data-s="' + x.key + '"' + (st === x.key ? ' class="on"' : '') + '>' + x.label + '</button>';
+  });
+  return s + '</div></div>';
+}
+
 function showReading(inp) {
   var R = READ.read(inp);
   lastReading = R;
-  var P = R.pillars, A = R.analysis, S = R.sanmei, K = R.shukuyo, cal = R.calendar;
+  var P = R.pillars, A = R.analysis, S = R.sanmei, K = R.shukuyo, cal = R.calendar, X = R.structure;
+  var st = RC.STEM10[P.dmName];
   var H = [];
+  var faceIds = [];
+  function face(id, q) { faceIds.push(id); return faceBox(id, q); }
 
   document.getElementById('readsub').textContent =
     inp.y + '年' + inp.m + '月' + inp.d + '日' + (inp.hasTime ? ' ' + pad(inp.hh) + ':' + pad(inp.mi) : '（時刻なし）');
@@ -2116,42 +2177,35 @@ function showReading(inp) {
   H.push('<div class="warn"><b>この読みの立て方。法則が主です。</b><br>'
     + '生年月日・暦記号・星の配置は、法則が現れた一つの面（<b>従</b>）。<br>'
     + 'あなたの生活・履歴・環境・選択・行動も、法則が展開したもう一つの面（<b>従</b>）。<br>'
-    + 'この読みは、法則を星の配置に照らして、生活の側に何が展開しているかを'
-    + '読み解こうとするものです。<br><br>'
+    + 'この読みは、法則を星の配置に照らして、生活の側に何が展開しているかを読み解くものです。'
+    + 'だから断定で書きます。<br><br>'
+    + '断定してよいのは、下に出した記号と、採用した象意・生剋の関係から導けることだけです。'
+    + '導けないことは書かず、最後の「見えていない部分」に置いてあります。<br><br>'
     + '読みと実際の出来事が食い違って見えるときは、法則が外れたのではなく、'
     + '展開が別の面に出ているか、まだその面が見えていないと考えます。'
     + 'どの面に出ているかは、あなたが実際の出来事で確かめるほかありません。'
     + '当たり外れを数値にすることはしません。</div>');
 
-  /* --- 1. 結論 --- */
-  H.push('<div class="rsec"><h3>1. 結論 <span>検証する価値のあるテーマ（3つ以内）</span></h3>');
-  R.themes.forEach(function (t, i) {
-    H.push('<div class="rlead"><b>' + (i + 1) + '. ' + esc(t.theme) + '</b>'
-      + '<p>' + chip('仮説') + esc(t.reality_check) + '</p></div>');
-  });
-  H.push('<p class="lead mt">'
-    + 'この3つは、下の構造から機械的に選んだ「確かめる順番の候補」です。'
-    + 'あなたにとって重要な順ではありません。</p></div>');
-
-  /* --- 2. 入力と計算条件 --- */
-  H.push('<div class="rsec"><h3>2. 入力と計算条件 <span>解釈の前に固定したもの</span></h3>');
-  H.push(row('生年月日', esc(inp.y + '-' + pad(inp.m) + '-' + pad(inp.d))));
-  H.push(row('出生時刻', inp.hasTime ? esc(pad(inp.hh) + ':' + pad(inp.mi)) : '不明（省略した計算あり）'));
-  H.push(row('出生地', inp.place ? esc(inp.place) : '不明'));
-  H.push(row('呼称・性別など', inp.gender ? esc(inp.gender) + '<br><span class="sub">呼称と、本人が確認する文脈の質問にのみ使用。性格・能力・役割・運勢の算出には使っていません。</span>' : '未入力'));
-  R.conventions.forEach(function (c) { H.push(row(c[0], esc(c[1]))); });
-  H.push('</div>');
-
-  /* --- 3. 暦計算上の事実 --- */
-  H.push('<div class="rsec"><h3>3. 暦・周期上の事実 <span>再現可能な計算</span></h3>');
+  /* =================== 1. 基本命式 =================== */
+  H.push('<div class="rsec"><h3>1. 基本命式 <span>解釈の前に固定したもの</span></h3>');
   H.push('<div class="pill">');
   P.pillars.forEach(function (p) {
     H.push('<div><u>' + p.name + '</u><s>' + p.gz + '</s><em>' + p.stemElem + '／' + p.branchElem
       + '<br>' + (p.name === '日柱' ? '日主' : p.tenGodStem) + '</em></div>');
   });
-  if (!inp.hasTime) H.push('<div><u>時柱</u><s>—</s><em>時刻不明のため<br>算出せず</em></div>');
+  if (!inp.hasTime) H.push('<div><u>時柱</u><s>不明</s><em>出生時刻の入力が<br>ないため算出せず</em></div>');
   H.push('</div>');
+  if (!inp.hasTime) {
+    H.push('<p class="lead">出生時刻が不明なので、<b>時柱は出していません</b>。'
+      + '正午などで埋めた推測値も作っていません。時柱から読める部分は、この読みには入っていません。</p>');
+  }
   H.push(row(chip('計算') + '日主', P.dmName + '（' + P.dmYin + P.dmElem + '）'));
+  H.push(row(chip('計算') + '生年月日', esc(inp.y + '-' + pad(inp.m) + '-' + pad(inp.d))));
+  H.push(row(chip('計算') + '出生時刻', inp.hasTime ? esc(pad(inp.hh) + ':' + pad(inp.mi)) : '不明'));
+  H.push(row(chip('計算') + '出生地', inp.place ? esc(inp.place) : '不明'));
+  H.push(row('呼称・性別など', inp.gender ? esc(inp.gender)
+    + '<br><span class="sub">呼称と、本人が確認する文脈の質問にのみ使用。性格・能力・役割・運勢の算出には使っていません。</span>'
+    : '未入力'));
   H.push(row(chip('計算') + '節気・候',
     cal.sekki.name + '／第' + cal.kou.no + '候 ' + cal.kou.kanji + '（' + cal.kou.yomi + '）'));
   H.push(row(chip('計算') + '旧暦',
@@ -2160,138 +2214,286 @@ function showReading(inp) {
      混同されないようにするため）。月相は名称と月齢の日数だけにする。 */
   H.push(row(chip('計算') + '月相', cal.moon.name + '（月齢' + cal.moon.age.toFixed(1) + '日）'));
   H.push(row(chip('計算') + '50音歴', '第' + cal.gojuon.no + '音「' + cal.gojuon.sound + '」'));
-  H.push(row(chip('計算') + '五行の記号数',
-    A.elems.map(function (e) { return e.elem + e.count; }).join('　')
-    + '<br><span class="sub">命式というモデルの中に記号がいくつ現れたかであって、性格の強さの数値ではありません。</span>'));
+  H.push(row(chip('伝統') + '柱の対応',
+    ['年柱', '月柱', '日柱', '時柱'].map(function (n) {
+      return n + '＝' + RC.PILLAR_ROLE[n];
+    }).join('<br>')
+    + '<br><span class="sub">年齢区分の年数は流派差が大きいため出していません。</span>'));
+  H.push('<p class="lead mt">採用した流派・表・境界は次のとおりです。'
+    + '解釈より先に、ここを固定しています。</p>');
+  R.conventions.forEach(function (c) { H.push(row(c[0], esc(c[1]))); });
   H.push('</div>');
 
-  /* --- 4. 伝統モデル上の構造 --- */
-  H.push('<div class="rsec"><h3>4. 伝統モデル上の構造 <span>採用流派の固定対応</span></h3>');
-  H.push('<p class="lead">'
-    + '以下は、法則が<b>星の配置という面</b>に現れたときの位置です。'
-    + 'あなたの生活という面に、これがそのままの形で出ているとは限りません。'
-    + '同じ法則でも、面が違えば現れ方が変わります。'
-    + 'どう出ているかは、この先の仮説を手がかりに、実際の出来事で確かめていくものです。</p>');
-  A.axes.forEach(function (a) {
-    H.push(row(chip('伝統') + a.axis, a.label + '：' + a.count + '個'
-      + (a.from.length ? '<br><span class="sub">' + esc(a.from.join('、')) + '</span>' : '')));
+  /* =================== 2. 四柱推命で見る本質 =================== */
+  H.push('<div class="rsec"><h3>2. 四柱推命で見る本質 <span>日主・月令・支の重なり・日柱</span></h3>');
+  H.push('<p class="lead">' + RC.NOTES.faceLead + '</p>');
+
+  /* 日主 */
+  H.push(rd(
+    chip('伝統') + '日干は' + P.dmName + '。' + P.dmYin + 'の' + P.dmElem + '。象意は「' + st.metaphor + '」。',
+    [ say('本質は、<em>' + st.metaphor + '</em>のような人です。'),
+      say(st.core + '。'),
+      say(st.logic),
+      beat(st.verbs),
+      say(RC.YINYANG[P.dmYin] + '（' + P.dmName + 'は' + P.dmYin + '干）') ],
+    [ st.challenge + 'この人の本質は、<em>' + st.essence + '</em>です。',
+      st.contrast ]));
+
+  /* 月令 */
+  H.push(rd(
+    chip('計算') + '月支は' + X.monthBranch + '。' + X.monthElem + '。日主は' + X.dmElem + '。'
+      + '月令に対する位置は「' + X.command + '」。',
+    [ say(RC.COMMAND_MEAN[X.command]),
+      say('<span class="sub">' + RC.NOTES.commandGuard
+        + 'ここから身強・身弱を断定することはしていません。数え方が流派で違うためです。</span>') ]));
+
+  /* 支の重なり */
+  if (X.repeats.length) {
+    X.repeats.forEach(function (r) {
+      var rel = READ.relOf(READ.ELEM.indexOf(X.dmElem), READ.ELEM.indexOf(r.elem));
+      H.push(rd(
+        chip('計算') + '地支に' + r.branch + 'が' + r.n + 'つ。' + r.branch + 'は' + r.yin + 'の' + r.elem
+          + '（蔵干 ' + r.hidden.join('・') + '）。',
+        [ say('同じ支が重なるほど、その五行の働きは分散せず一方向に出ます。'
+            + 'この命式で重なっているのは、' + RC.ELEM_WORK[r.elem] + 'です。'),
+          say(r.elem + 'は' + RC.REL_NAME[rel] + '。'
+            + '厚さの意味は次の節でまとめて見ます。') ]));
+    });
+  } else {
+    H.push(rd(chip('計算') + '地支に同じ支の重なりはありません。',
+      [ say('支の働きは一方向に集まらず、それぞれ別の方向を向いています。'
+          + '厚みで押すのではなく、面の広さで対応する作りです。') ]));
+  }
+
+  /* 日柱 */
+  H.push(rd(
+    chip('計算') + '日柱は' + X.day.gz + '。日支' + X.day.branch + 'の蔵干の本気は' + X.day.hiddenMain
+      + 'で、日主から見て' + X.day.tenGodMain + '。十二運は' + X.day.stage + '。',
+    [ say('日柱は本人そのものの柱です。その座下に置いているのが' + X.day.tenGodMain + '。'
+        + RC.TENGOD_MEAN[X.day.tenGodMain] + 'この働きの上に立っています。'),
+      say('十二運は' + X.day.stage + '。' + RC.STAGE_MEAN[X.day.stage]
+        + (/^(病|死|墓|絶)$/.test(X.day.stage)
+           ? '<span class="sub">' + RC.NOTES.stageGuard + '</span>' : '')) ]));
+  H.push(face('face.shichu', RC.SECTION_CHECK.shichu));
+  H.push('</div>');
+
+  /* =================== 3. 五行の偏り =================== */
+  H.push('<div class="rsec"><h3>3. 五行の偏り <span>何が厚く、何が無いか</span></h3>');
+  H.push(row(chip('計算') + '五行の記号数',
+    A.elems.map(function (e) { return e.elem + e.count; }).join('　')
+    + '<br><span class="sub">' + RC.NOTES.gogyoRule + '</span>'));
+
+  H.push(rd(
+    chip('計算') + X.heaviest.elem + 'が' + X.heaviest.count + 'つ。この命式でいちばん多い五行。',
+    [ say(X.heaviest.elem + 'は' + RC.ELEM_WORK[X.heaviest.elem] + '。それが厚く出ています。'),
+      say(RC.HEAVY[X.heaviest.rel]) ]));
+
+  if (X.lacking.length) {
+    X.lacking.forEach(function (L) {
+      var d = RC.LACK[X.dmElem][L.rel];
+      H.push(rd(
+        chip('計算') + L.elem + 'が命式に一つも現れません。'
+          + L.elem + 'は日主' + X.dmElem + 'から見て' + RC.REL_NAME[L.rel] + '。',
+        [ say(L.elem + 'は' + RC.ELEM_WORK[L.elem] + '。それが記号の面に無いということです。'),
+          say(d.effect) ]));
+    });
+    H.push('<p class="lead">欠けている五行は、欠陥ではありません。方向です。'
+      + '無い働きは内側で自動化されないので、外から入れる形になります。'
+      + '何が入るとどう変わるかは、7節にまとめてあります。</p>');
+  } else {
+    H.push(rd(chip('計算') + '五行はすべて現れています。欠けている方向はありません。',
+      [ say('どの働きも記号の面に出ています。だから足りないものを外から補うより、'
+          + '厚い方向と薄い方向の配分をどう置くかが、この命式の課題になります。') ]));
+  }
+  H.push('<p class="lead mt">' + RC.NOTES.noYojin + '</p>');
+  H.push(face('face.gogyo', RC.SECTION_CHECK.gogyo));
+  H.push('</div>');
+
+  /* =================== 4. 算命学で見る本質 =================== */
+  H.push('<div class="rsec"><h3>4. 算命学で見る本質 <span>十大主星・十二大従星</span></h3>');
+  H.push(rd(
+    chip('伝統') + S.stars.map(function (s) { return s.src + '（' + s.tenGod + '）→ ' + s.star; }).join('／'),
+    X.stars.map(function (s) {
+      var m = RC.JUDAI_MEAN[s.star];
+      return say('<em>' + s.star + '</em>（' + m.from + 'の再命名）。' + m.line
+        + (s.n >= 2 ? s.star + 'は' + s.n + 'つ。この働きが重なって出ています。' : ''));
+    })));
+  var juSays = S.jusei.map(function (j) {
+    return say('<em>' + j.star + '</em>（' + j.src.split(' ')[0] + '）。' + RC.JUJUSEI_MEAN[j.star]);
   });
-  H.push(row(chip('伝統') + '十大主星',
-    S.stars.map(function (s) { return s.star; }).join('、')
-    + '<br><span class="sub">十神の再命名として写像（高尾学館系の対応）。</span>'));
-  H.push(row(chip('伝統') + '十二大従星',
-    S.jusei.map(function (j) { return j.src + '→' + j.star + '（' + j.stage + '）'; }).join('<br>')));
-  H.push(row(chip('計算') + '天中殺',
-    '日柱：' + S.dayTenchusatsu.name + '／年柱：' + S.yearTenchusatsu.name
-    + '<br><span class="sub">十干10と十二支12の差から、一旬に必ず二支が余るという算術です。'
-    + '「天が欠ける」「不運」は' + chip('伝統') + 'の解釈であって、この算術とは別物です。吉凶判定には使いません。</span>'));
-  H.push(row(chip('伝統') + '本命宿（宿曜道）',
+  /* 本人の柱（日柱）と、それ以外の柱で従星が違うときは、そこが対比になる */
+  var dayJu = S.jusei[2].star, outerJu = [];
+  S.jusei.forEach(function (j, i) {
+    if (i !== 2 && outerJu.indexOf(j.star) < 0) outerJu.push(j.star);
+  });
+  if (outerJu.indexOf(dayJu) < 0) {
+    juSays.push(say('外側の柱は' + outerJu.join('と') + '。本人の柱は' + dayJu + '。'
+      + '外側と本人が、周期の別の位置に置かれています。'));
+  }
+  juSays.push(say('<span class="sub">' + RC.NOTES.stageGuard + '</span>'));
+  H.push(rd(
+    chip('伝統') + S.jusei.map(function (j) { return j.src + '（' + j.stage + '）→ ' + j.star; }).join('／'),
+    juSays));
+  H.push('<div class="warn"><b>人体星図の配置は出していません。</b>'
+    + '頭・胸・腹・左手・右手・肩・足のどこにどの星が入るかという配置表は、'
+    + '流派ごとに違い、確信をもって固定できませんでした。'
+    + '推測で埋めると、誤った構造を事実として出すことになります。'
+    + '<b>この節でここだけは断定していません。</b>星そのものは上に出しています。</div>');
+  H.push(face('face.sanmei', RC.SECTION_CHECK.sanmei));
+  H.push('</div>');
+
+  /* =================== 5. 天中殺 =================== */
+  H.push('<div class="rsec"><h3>5. 天中殺 <span>算術の事実と、そこから言えること</span></h3>');
+  H.push(rd(
+    chip('計算') + '日柱' + X.day.gz + 'は' + S.dayTenchusatsu.junStart + 'の旬。'
+      + '十干10と十二支12の差で、一旬に必ず二支が余る。この命式では'
+      + X.tcs.branches.join('と') + '（' + X.tcs.elems.join('・') + '）。'
+      + '年柱では' + S.yearTenchusatsu.name + '。',
+    [ say('ここまでは算術です。10ずつ区切れば12のうち2つが必ず残る、というだけのことです。'),
+      say('余る二支が指すのは' + X.tcs.elems.join('と') + '。'
+        + X.tcs.elems.map(function (e) { return RC.ELEM_SHORT[e]; }).join('と') + 'の方向です。'),
+      say(RC.TCS_OVERLAP[X.tcs.overlap]) ],
+    '<span class="sub">' + RC.NOTES.tcsGuard + '</span>'));
+  H.push(face('face.tenchu', RC.SECTION_CHECK.tenchu));
+  H.push('</div>');
+
+  /* =================== 6. 宿曜道で見る本質 =================== */
+  H.push('<div class="rsec"><h3>6. 宿曜道で見る本質 <span>採用方式：伝統暦方式</span></h3>');
+  H.push(row(chip('伝統') + '本命宿',
     '<b class="big">' + K.name + '</b>'
     + '<br><span class="sub">' + esc(K.formula) + '</span>'
     + (K.leapNote ? '<br><span class="sub">' + esc(K.leapNote) + '</span>' : '')));
+  H.push(rd(
+    chip('計算') + '旧暦' + K.lunarMonth + '月' + K.lunarDay + '日。'
+      + '朔日宿は' + K.sakujitsu + '。生まれた日の月相は' + cal.moon.name
+      + '（月齢' + cal.moon.age.toFixed(1) + '日）。',
+    [ say('本命宿は、旧暦の日付から一つに決まります。'
+        + '朔から数えて' + K.lunarDay + '日目という位置を、27の区画に写したものが' + K.name + 'です。'),
+      say('本命宿も月相も、朔からの経過を表しています。'
+        + '独立した二つの根拠ではありません。ここを重ねて数えることはしません。') ]));
   H.push(row(chip('計算') + '（比較資料）天文方式',
     K.astro.name + '（月の恒星黄経 ' + K.astro.sidLon.toFixed(2) + '°／ラヒリ）'
     + '<br><span class="sub">'
     + (K.agrees ? 'たまたま一致しました。' : '伝統暦方式とは<b>異なります</b>。')
     + '両者は別のモデルなので一致するとは限りません。宿曜道としては上の伝統暦方式を正とし、'
     + 'これは比較のためだけに出しています。混ぜて使っていません。</span>'));
-  H.push('<div class="note" style="margin-top:10px"><b>流儀の確認をお願いします。</b>'
-    + '三九の関係表（宿番号の差から関係名を出す並び）は流派差があるため、'
-    + 'この読みでは<b>使っていません</b>。相手の生年月日が要ることもあり、'
-    + '単独の読みには含めていません。</div>');
+  H.push('<div class="warn"><b>宿から人物像は出していません。</b>'
+    + RC.NOTES.shukuLimit
+    + '<br><br>三九の関係表（宿番号の差から関係名を出す並び）も、並びに流派差があるため'
+    + '<b>使っていません</b>。相手の生年月日が要ることもあり、単独の読みには含めていません。</div>');
   H.push('</div>');
 
-  /* --- 中立軸 --- */
-  H.push('<div class="rsec"><h3>中立軸への変換 <span>三術を直接足し合わせない</span></h3>');
-  H.push('<p class="lead">'
-    + '四柱推命・算命学・宿曜道は別々のモデルなので、結果をそのまま合算しません。'
-    + 'いったん次の7つの軸へ移してから見比べます。流派をまたいだ一致は'
-    + '「象徴が重なった」というだけで、科学的な裏づけではありません。</p>');
-  R.neutral.forEach(function (n) {
-    H.push(row(n.key, esc(n.observed) + '<br><span class="subq">→ ' + esc(n.question) + '</span>'));
-  });
-  H.push('</div>');
-
-  /* --- 5. 人物仮説 --- */
-  H.push('<div class="rsec"><h3>5. 生活の面で何が展開しているか <span>どの面に出ているかを見に行くための手がかり</span></h3>');
-  R.hypotheses.forEach(function (h, i) {
-    var st = statusStore[h.id] || 'untested';
-    H.push('<div class="hyp" data-h="' + esc(h.id) + '">');
-    H.push('<h4>仮説' + (i + 1) + '：' + esc(h.theme) + '</h4>');
-    H.push('<div class="f"><u>根拠（採用した規則）</u>' + chip('伝統') + esc(h.traditional_basis) + '</div>');
-    H.push('<div class="f"><u>生かされた場合</u>' + chip('仮説') + esc(h.possible_strength) + '</div>');
-    H.push('<div class="f"><u>過剰・環境不適合の場合</u>' + chip('仮説') + esc(h.overload_pattern) + '</div>');
-    H.push('<div class="f"><u>発揮されやすい条件</u>' + esc(h.enabling_conditions) + '</div>');
-    H.push('<div class="f"><u>別の面での現れ方</u>' + chip('仮説') + esc(h.counter_hypothesis) + '</div>');
-    H.push('<div class="q"><div class="f" style="margin:0"><u>どの面に出ているかを見る問い</u>' + esc(h.reality_check) + '</div></div>');
-    H.push('<div class="stat">');
-    RC.STATUS.forEach(function (s) {
-      H.push('<button data-s="' + s.key + '"' + (st === s.key ? ' class="on"' : '') + '>' + s.label + '</button>');
+  /* =================== 7. 真理構造からの統合 =================== */
+  H.push('<div class="rsec"><h3>7. 真理構造からの統合 <span>三つのモデルを足し合わせずに並べる</span></h3>');
+  H.push('<p class="lead">四柱推命・算命学・宿曜道は別々のモデルです。結果をそのまま合算しません。'
+    + 'ここでは、同じ命式が三つの言い方でどう見えるかを並べ、'
+    + '一つの流れとして読みます。流派をまたいだ一致は「象徴が重なった」というだけで、'
+    + '科学的な裏づけではありません。</p>');
+  var togo = [
+    say('<em>' + P.dmName + X.dmElem + '</em>。' + st.core + '。'),
+    say('この命式でいちばん厚いのは' + X.heaviest.elem + '。'
+      + st.verbs.slice(0, 3).join('・') + 'という働きを、その厚さがそのまま支えています。'),
+    say('<span class="sub">算命学の星（' + X.stars.slice(0, 3).map(function (s) { return s.star; }).join('・')
+      + '…）は、四柱推命の十神を別の名で呼んだものです。'
+      + '同じ命式を二度数えないよう、ここでは独立した根拠として扱っていません。'
+      + '宿曜道の本命宿も、旧暦の日付から出るもので、四柱とは別の暦を見ています。</span>')
+  ];
+  if (X.lacking.length) {
+    togo.push(say('そして' + X.lacking.map(function (L) { return L.elem; }).join('と')
+      + 'が現れません。'
+      + X.lacking.map(function (L) { return RC.ELEM_SHORT[L.elem]; }).join('と')
+      + 'が、記号の面には無いということです。'));
+    X.lacking.forEach(function (L) {
+      togo.push(say(RC.LACK[X.dmElem][L.rel].supply));
     });
-    H.push('</div></div>');
-  });
+    if (X.tcs.overlap === 'lack') {
+      togo.push(say('天中殺で余る二支も、同じ方向を指しています。'
+        + '持っていない働きと、旬の中で欠ける支が、一つの方向に揃っている構造です。'));
+    }
+  }
+  togo.push(say('つまりこの人は、' + st.verbs.slice(0, 2).join('・') + 'という働きで立っていて、'
+    + '<em>' + st.essence + '</em>——そこへ向かうかどうかが分かれ目になります。'));
+  H.push(rd(chip('読み') + '2〜6節で出した記号を、一つの流れとして並べたもの。', togo));
+  H.push('<p class="lead mt">' + RC.NOTES.dualNote + '</p>');
+  H.push(face('face.togo', RC.SECTION_CHECK.togo));
   H.push('</div>');
 
-  /* --- 6. 課題と成長実験 --- */
-  H.push('<div class="rsec"><h3>6. 課題と成長実験 <span>2週間以内に試せること</span></h3>');
-  H.push('<p class="lead">'
-    + '課題は欠点ではなく、強みの過剰使用または環境との不適合として書いています。</p>');
-  R.themes.forEach(function (t) {
-    var src = RC.hypotheses[t.id];
-    H.push('<div class="hyp"><h4>' + esc(t.theme) + '</h4>');
-    H.push('<div class="f"><u>試せる行動</u>' + esc(src.experiment) + '</div>');
-    H.push('<div class="f"><u>記録する観察指標</u>' + esc(src.metric) + '</div>');
-    H.push('<div class="f"><u>この面に出ていれば予想される変化</u>' + esc(src.expected) + '</div>');
-    H.push('<div class="f"><u>変化がなければ、次に見る面</u>' + esc(src.ifnot) + '</div></div>');
+  /* =================== 8. 向いている場・役割 =================== */
+  H.push('<div class="rsec"><h3>8. 向いている場・役割 <span>職業名ではなく、場の条件</span></h3>');
+  var baSays = [ say(RC.ELEM_WORK[X.dmElem] + 'が要る場で働きます。'
+    + 'それが要らない場に置かれると、同じ力が使い道を失います。') ];
+  var topAxis = A.axesRanked[0];
+  if (RC.BA_AXIS[topAxis.axis]) {
+    baSays.push(say('命式でいちばん多いのは' + topAxis.axis + '（' + topAxis.count + '個）。'
+      + RC.BA_AXIS[topAxis.axis].many));
+  }
+  A.axes.forEach(function (a) {
+    if (a.count === 0 && RC.BA_AXIS[a.axis]) {
+      baSays.push(say(a.axis + 'の記号が一つも現れません。' + RC.BA_AXIS[a.axis].none));
+    }
   });
+  H.push(rd(chip('読み') + '五軸の個数は '
+    + A.axes.map(function (a) { return a.axis + a.count; }).join('　') + '。日主は' + P.dmName + '。',
+    baSays));
+  H.push('<p class="lead mt">' + RC.NOTES.noJob + '</p>');
+  H.push(face('face.ba', RC.SECTION_CHECK.ba));
   H.push('</div>');
 
-  /* --- 7. 中心目的の候補 --- */
-  H.push('<div class="rsec"><h3>7. 中心目的の候補 <span>事実ではなく、選べる問い</span></h3>');
-  H.push('<div class="warn">「魂の目的」「使命」「前世」は生年月日から確定できる種類の事柄ではありません。'
-    + '以下は<b>あなたが選べる中心課題の候補</b>を問いの形にしたものです。'
-    + '選んで、継続した行動で意味を与えたテーマだけが、あなたの目的になります。</div>');
-  var pq = [];
+  /* =================== 9. 一言でまとめると =================== */
+  H.push('<div class="rsec"><h3>9. 一言でまとめると <span></span></h3>');
+  H.push('<div class="one">');
+  H.push('<p>' + P.dmName + X.dmElem + '。' + st.core + '。</p>');
+  H.push('<p>本質は、' + st.essence + '。</p>');
+  if (X.lacking.length) {
+    H.push('<p>そのために要るのは、'
+      + X.lacking.map(function (L) { return RC.ELEM_SHORT[L.elem]; }).join('と')
+      + '。それは外から入れるものです。</p>');
+  } else {
+    H.push('<p>要るものは、命式の中にそろっています。'
+      + 'あとは、どこにどれだけ配るかです。</p>');
+  }
+  H.push('</div>');
+  H.push('<div class="warn" style="margin-top:12px">「魂の目的」「使命」「前世」は生年月日から'
+    + '確定できる種類の事柄ではありません。以下は<b>あなたが選べる中心課題の候補</b>を'
+    + '問いの形にしたものです。選んで、継続した行動で意味を与えたテーマだけが、'
+    + 'あなたの目的になります。</div>');
   A.axesRanked.slice(0, 2).forEach(function (a) {
-    if (RC.PURPOSE_QUESTIONS[a.axis]) pq.push(RC.PURPOSE_QUESTIONS[a.axis]);
-  });
-  R.themes.forEach(function (t) {
-    var s = RC.hypotheses[t.id];
-    if (s && s.purpose && pq.indexOf(s.purpose) < 0) pq.push(s.purpose);
-  });
-  pq.slice(0, 3).forEach(function (q) {
-    H.push('<div class="rlead"><p>' + chip('仮説') + esc(q) + '</p></div>');
+    if (RC.PURPOSE_QUESTIONS[a.axis]) {
+      H.push('<div class="rlead"><p>' + chip('読み') + esc(RC.PURPOSE_QUESTIONS[a.axis]) + '</p></div>');
+    }
   });
   H.push('</div>');
 
-  /* --- 8. どの面まで見えているか --- */
-  H.push('<div class="rsec"><h3>8. どの面まで見えているか <span>見た／まだ見ていない／算出できない</span></h3>');
+  /* =================== 10. 見えていない部分 =================== */
+  H.push('<div class="rsec"><h3>10. 見えていない部分 <span>算出できないもの／記録の残し方</span></h3>');
+  R.fudo.forEach(function (f) {
+    H.push(row(chip('不能') + esc(f.what), esc(f.why)));
+  });
   H.push(row(chip('確認'), inp.self
     ? 'あなたが書いた「' + esc(inp.self.slice(0, 80)) + (inp.self.length > 80 ? '…' : '') + '」は、'
-      + '上の手がかりと突き合わせる材料です。生活の面に出ていると見えたものを'
+      + '上の読みと突き合わせる材料です。生活の面に出ていると見えたものを'
       + chip('確認') + 'に移してください。'
-      + '<br><span class="sub">この記録はアプリではなくあなたが付けます。各項目の状態ボタンで残せます。</span>'
-    : 'まだありません。各項目の状態ボタンで、どの面に出ているかを記録できます。'));
-  H.push(row(chip('仮説'), '上の項目はすべて「まだ見ていない」から始まります。'
-    + '問いに具体例で答えられたものが、この面に出ていると分かります。'));
+      + '<br><span class="sub">この記録はアプリではなくあなたが付けます。各節の状態ボタンで残せます。</span>'
+    : 'まだありません。各節の状態ボタンで、どの面に出ているかを記録できます。'));
   H.push(row(chip('別面'), 'いま見ている面に出ていなかったものは、消さずに「別の面に出ている」として残してください。'
     + '<br><span class="sub">それは外れた記録ではなく、'
     + 'どこを探せばよいかが一つ分かった記録です。'
     + '同じ法則でも、現れる面が変われば形が変わります。'
     + 'ずれているのは法則ではなく、いまどの面を見ているかです。</span>'));
-  R.fudo.forEach(function (f) {
-    H.push(row(chip('不能') + esc(f.what), esc(f.why)));
-  });
-  H.push('</div>');
-
-  /* --- 9. 次の観察 --- */
-  H.push('<div class="rsec"><h3>9. 次に観察すること <span>3つ以内</span></h3>');
-  R.themes.slice(0, 3).forEach(function (t, i) {
-    H.push('<div class="rlead"><p>' + (i + 1) + '. ' + esc(t.reality_check) + '</p></div>');
-  });
+  /* 前の版で付けた記録を黙って消さない。表示できないものは、あることだけ伝える。 */
+  var orphan = [];
+  for (var ok in statusStore) {
+    if (faceIds.indexOf(ok) < 0 && statusStore[ok] && statusStore[ok] !== 'untested') orphan.push(ok);
+  }
+  if (orphan.length) {
+    H.push(row(chip('確認') + '前の版で付けた記録',
+      orphan.length + '件あります。前の版は項目の区切り方が違ったため、この画面には出せません。'
+      + '<br><span class="sub">消してはいません。端末の中にそのまま残しています。</span>'));
+  }
   H.push('<p class="lead mt">'
     + 'この読みは、医療・法律・採用・信用・結婚などの判断には使えません。'
-    + 'そうした判断へ誘導する内容も含めていません。</p>');
+    + 'そうした判断へ誘導する内容も含めていません。'
+    + '的中率・確率・スコアの類も出していません。</p>');
   H.push('</div>');
 
   document.getElementById('readbody').innerHTML = H.join('');
@@ -2299,11 +2501,11 @@ function showReading(inp) {
   readOpen = true; readEl.classList.add('open');
 }
 
-/* 仮説の状態切り替え（本人が判定する。反証も消さずに残す） */
+/* 面の見え方の記録（本人が付ける。別の面に出ていた記録も消さずに残す） */
 document.getElementById('readbody').addEventListener('click', function (e) {
   var b = e.target.closest ? e.target.closest('.stat button') : null;
   if (!b) return;
-  var box = b.closest('.hyp'), id = box && box.getAttribute('data-h');
+  var box = b.closest('.face'), id = box && box.getAttribute('data-h');
   if (!id) return;
   var btns = box.querySelectorAll('.stat button');
   for (var i = 0; i < btns.length; i++) btns[i].classList.remove('on');

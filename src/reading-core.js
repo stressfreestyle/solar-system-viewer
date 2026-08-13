@@ -21,8 +21,12 @@
      経緯と、逸脱していない安全側の規定については README の
      「指示書からの意図的な逸脱」を参照。指示書のファイル自体は書き換えていない。
 
+   第7フェーズで文面を断定調へ書き換えた。主＝法則である以上、読みは
+   「かもしれない」ではなく断定で書く。ただし断定してよいのは、採用した
+   象意と生剋の関係から導けることだけで、導けないものは fudo（[不能]）に入れる。
+
    主従とは別に、次の安全側の原則はそのまま維持している:
-     ・生年月日から見えない本質・未来・魂の目的を断定しない
+     ・未来の出来事と「魂の目的」を断定しない
      ・死・病気・事故・犯罪・妊娠出産・離婚・財産などの高リスク事項を予測しない
      ・医療・法律・採用・信用・結婚などの判断へ誘導しない
      ・確信をもって固定できない表は推測で埋めず fudo（[不能]）に入れる
@@ -370,108 +374,97 @@ function sanku(selfIdx, otherIdx) {
 }
 
 /* =====================================================================
-   中立軸への変換（指示書5）
-   三術の結果を直接合算せず、いったんこの7軸へ移してから比べる。
+   構造の抽出（第7フェーズ）
+   -------------------------------------------------------------------
+   文面を断定調で組み立てるために、命式から「何を根拠に断定できるか」を
+   すべて取り出しておく層。ここで出すのは記号の関係だけで、
+   意味づけの文言は reading-content.js が持つ。
+   乱数は使わない。同じ入力からは必ず同じ構造が出る。
    ===================================================================== */
-function neutralAxes(P, A, S, K, cal) {
-  var out = [];
-  out.push({
-    key: '周期位置', observed: '生月の節気は' + A.season + '（' + P.pillars[1].branchName + '月）。'
-      + '日支の十二運は' + A.dayStage + '（' + A.dayJusei + '）で、周期の「' + A.phase + '」の群。'
-      + '生まれた日の月相は' + cal.moon.name + '（月齢' + cal.moon.age.toFixed(1) + '日）。',
-    question: '開始・展開・収束・休止のどの局面で動きやすいか。'
-  });
-  var top = A.axesRanked[0], bottom = A.axesRanked[A.axesRanked.length - 1];
-  out.push({
-    key: '集中と分散',
-    observed: '命式の記号は' + top.axis + '（' + top.label + '）に最も多く現れ、'
-      + bottom.axis + '（' + bottom.label + '）が最も少ない。'
-      + '五行では' + A.elemsRanked[0].elem + 'が多く、'
-      + A.elemsRanked[A.elemsRanked.length - 1].elem + 'が少ない。',
-    question: '専門化しやすいか、切替えに外部の支援が要るか。'
-  });
-  out.push({
-    key: '支援と表出',
-    observed: '生我（受け取る）' + cnt(A, '生我') + '、我生（外へ出す）' + cnt(A, '我生') + '。',
-    question: '受け取ることと外へ出すことの配分は実際どうなっているか。'
-  });
-  out.push({
-    key: '自律と制約',
-    observed: '同類（自分の基準）' + cnt(A, '同類') + '、剋我（外の規律）' + cnt(A, '剋我') + '。',
-    question: '自分の基準と外部の規律をどう調整しているか。'
-  });
-  out.push({
-    key: '資源と成果',
-    observed: '我剋（資源を価値へ変える）' + cnt(A, '我剋') + '。',
-    question: '時間・物・関係を何にどう変えてきたか。'
-  });
-  out.push({
-    key: '関係距離',
-    observed: '宿曜（伝統暦方式）の本命宿は' + K.name + '。'
-      + '三九の関係表は相手の宿が分かって初めて使える。',
-    question: '接近・競合・補完・離隔のどれが起きやすいか。'
-  });
-  out.push({
-    key: '時間変化',
-    observed: '天中殺（一旬に現れない二支）は日柱で' + S.dayTenchusatsu.name
-      + '、年柱で' + S.yearTenchusatsu.name + '。これは並びの算術であって吉凶ではない。',
-    question: '予言ではなく、観察する期間をどう区切るか。'
-  });
-  return out;
+
+/* 日主の五行から見た他の五行の関係 */
+function relOf(dmE, otherE) {
+  var d = ((otherE - dmE) % 5 + 5) % 5;
+  return ['同', '我生', '我剋', '剋我', '生我'][d];
 }
-function cnt(A, name) {
-  for (var i = 0; i < A.axes.length; i++) if (A.axes[i].axis === name) return 'は' + A.axes[i].count + '個';
-  return '';
+/* 月令に対する日主の位置（旺相休囚死）。
+   採用: 当令者旺・令生者相・生令者休・剋令者囚・令剋者死（標準）。
+   ※ 身強／身弱の判定はしない。数え方が流派で違うため。 */
+function commandState(dmE, monthE) {
+  if (dmE === monthE) return '旺';
+  if (dmE === (monthE + 1) % 5) return '相';
+  if (monthE === (dmE + 1) % 5) return '休';
+  if (monthE === (dmE + 2) % 5) return '囚';
+  return '死';
 }
 
-/* =====================================================================
-   仮説の組み立て
-   構造 → reading-content.js のテンプレート を決定的に選ぶ。
-   同じ入力からは必ず同じ出力になる（乱数を使わない）。
-   ===================================================================== */
-function buildHypotheses(P, A, S, K, cal) {
-  var H = [], seen = {};
-  function push(id) {
-    var t = RC.hypotheses[id];
-    if (!t || seen[id]) return;
-    seen[id] = 1;
-    H.push({
-      id: id, theme: t.theme, traditional_basis: t.traditional_basis,
-      possible_strength: t.possible_strength, overload_pattern: t.overload_pattern,
-      enabling_conditions: t.enabling_conditions, counter_hypothesis: t.counter_hypothesis,
-      reality_check: t.reality_check, status: 'untested'
-    });
-  }
-  // 五軸: 多い/少ない
-  A.axesRanked.forEach(function (a, rank) {
-    if (a.count >= 3) push('axis.' + a.axis + '.multi');
-    if (a.count === 0) push('axis.' + a.axis + '.none');
-  });
-  // 五行: 多い/無い
-  A.elemsRanked.forEach(function (e) {
-    if (e.count >= 4) push('elem.' + e.elem + '.multi');
-    if (e.count === 0) push('elem.' + e.elem + '.none');
-  });
-  // 季節・周期位置
-  push('season.' + A.season);
-  push('phase.' + A.phase);
-  // 月相
-  push('moon.' + moonBand(cal.moon.elongation));
-  // 天中殺（算術のみ）
-  push('tenchusatsu.general');
-  return H;
-}
-function moonBand(el) {
-  if (el < 45 || el >= 315) return '朔';
-  if (el < 135) return '上弦';
-  if (el < 225) return '望';
-  return '下弦';
-}
+function structure(P, A, S, K, cal) {
+  var dmE = STEM_ELEM[P.dm];
 
-/* 結論に出す「検証する価値のあるテーマ」上位3件（決定的な順序） */
-function topThemes(H, A) {
-  var order = H.slice();
-  return order.slice(0, 3);
+  /* 地支の重なり */
+  var bc = {}, i;
+  P.pillars.forEach(function (p) { bc[p.branchName] = (bc[p.branchName] || 0) + 1; });
+  var repeats = [];
+  BRANCHES.forEach(function (b) {
+    if (bc[b] >= 2) {
+      var bi = BRANCHES.indexOf(b);
+      repeats.push({ branch: b, n: bc[b], elem: ELEM[BRANCH_ELEM[bi]],
+                     yin: BRANCH_YIN[bi] ? '陰' : '陽', hidden: HIDDEN[b].slice() });
+    }
+  });
+
+  /* 五行の偏り */
+  var lacking = [], heaviest = A.elemsRanked[0];
+  A.elems.forEach(function (e) { if (e.count === 0) lacking.push(e.elem); });
+  var lackRel = lacking.map(function (e) {
+    return { elem: e, rel: relOf(dmE, ELEM.indexOf(e)) };
+  });
+  var heavyRel = relOf(dmE, ELEM.indexOf(heaviest.elem));
+
+  /* 月令 */
+  var monthE = BRANCH_ELEM[P.pillars[1].branch];
+  var command = commandState(dmE, monthE);
+
+  /* 日柱の構造 */
+  var dp = P.pillars[2];
+  var dayStruct = {
+    gz: dp.gz, branch: dp.branchName, branchElem: dp.branchElem,
+    hiddenMain: dp.hidden[0], tenGodMain: dp.tenGodHidden[0],
+    stage: dp.juniun, jusei: dp.jujusei
+  };
+
+  /* 十大主星の集計（決定的な順序: 出現順） */
+  var starOrder = [], starCount = {};
+  S.stars.forEach(function (s) {
+    if (!starCount[s.star]) { starCount[s.star] = 0; starOrder.push(s.star); }
+    starCount[s.star]++;
+  });
+  var stars = starOrder.map(function (n) { return { star: n, n: starCount[n] }; });
+
+  /* 天中殺の二支が指す五行と、命式の五行との重なり */
+  var tb = S.dayTenchusatsu.branches;
+  var tElems = [], tCounts = [];
+  tb.forEach(function (b) {
+    var e = ELEM[BRANCH_ELEM[BRANCHES.indexOf(b)]];
+    if (tElems.indexOf(e) < 0) tElems.push(e);
+  });
+  tElems.forEach(function (e) {
+    for (var k = 0; k < A.elems.length; k++) if (A.elems[k].elem === e) tCounts.push(A.elems[k].count);
+  });
+  var tSum = tCounts.reduce(function (s, v) { return s + v; }, 0);
+  var overlap = tSum === 0 ? 'lack'
+    : (tElems.indexOf(heaviest.elem) >= 0 ? 'heavy' : 'some');
+
+  return {
+    dmElem: ELEM[dmE], dmName: P.dmName, dmYin: P.dmYin,
+    repeats: repeats,
+    lacking: lackRel, heaviest: { elem: heaviest.elem, count: heaviest.count, rel: heavyRel },
+    monthBranch: P.pillars[1].branchName, monthElem: ELEM[monthE], command: command,
+    day: dayStruct, stars: stars,
+    tcs: { name: S.dayTenchusatsu.name, branches: tb, elems: tElems,
+           counts: tCounts, sum: tSum, overlap: overlap },
+    axes: A.axes
+  };
 }
 
 /* =====================================================================
@@ -483,9 +476,19 @@ function read(input) {
   var S = sanmei(P);
   var K = shukuyo(P, P.jd);
   var cal = CAL.snapshot(P.jd);
-  var N = neutralAxes(P, A, S, K, cal);
-  var H = buildHypotheses(P, A, S, K, cal);
+  var X = structure(P, A, S, K, cal);
   var fudo = P.fudo.concat(S.fudo);
+  fudo.push({ what: '身強・身弱の判定',
+              why: '月令・通根・蔵干の重みづけが流派ごとに違い、確信をもって固定できないため。'
+                 + '生まれ月の気に対する日主の位置（旺相休囚死）までは出しているが、'
+                 + 'そこから強弱を断定することはしていない。' });
+  fudo.push({ what: '格局・用神・喜忌の判定',
+              why: '何を用神とするかの決め方が流派ごとに違うため。'
+                 + 'この読みで使ったのは相生相剋の関係そのものだけで、'
+                 + '「この五行が吉、この五行が凶」という判定はしていない。' });
+  fudo.push({ what: '宿ごとの人物像（宿曜道）',
+              why: '宿から性格・相性・運勢を出す記述は流派によって大きく異なり、'
+                 + '確信をもって固定できないため。本命宿そのものは暦上の位置として出している。' });
   fudo.push({ what: '「魂の目的」「前世」「使命」の断定',
               why: '生年月日から確定できる種類の事柄ではない。本人が選び、継続した行動で'
                  + '意味を与えたテーマだけが、その人の目的として扱える。' });
@@ -493,7 +496,7 @@ function read(input) {
               why: 'この読みでは行わない。入力は呼称と、本人が確認する文脈の質問にのみ使う。' });
   return {
     input: input, pillars: P, analysis: A, sanmei: S, shukuyo: K,
-    calendar: cal, neutral: N, hypotheses: H, themes: topThemes(H, A), fudo: fudo,
+    calendar: cal, structure: X, fudo: fudo,
     conventions: conventions(input, P)
   };
 }
@@ -514,8 +517,13 @@ function conventions(input, P) {
     ? '出生時刻から算出。23:00〜23:59 は子刻とするが日柱は繰り上げない（夜子時を採らない扱い）'
     : '出生時刻がないため算出していない']);
   c.push(['蔵干表', '本気・中気・余気の三分表（子=癸／丑=己癸辛／寅=甲丙戊／卯=乙／辰=戊乙癸／巳=丙庚戊／午=丁己／未=己丁乙／申=庚壬戊／酉=辛／戌=戊辛丁／亥=壬甲）']);
-  c.push(['算命学の表', '十大主星は十神の再命名として写像（高尾学館系の対応）。十二大従星は十二運から写像。人体星図の配置は未採用（[不能]）']);
-  c.push(['宿曜道の方式', '伝統暦方式を正とする。本命宿 =（旧暦月の朔日宿 + 旧暦日 − 1）mod 27。閏月は直前の通常月と同じ朔日宿。天文方式は比較資料']);
+  c.push(['十干の象意', '滴天髄・窮通宝鑑の系統で広く使われる比喩を採用（甲＝大樹／乙＝草花／丙＝太陽／丁＝灯火／戊＝山／己＝田畑／庚＝原石／辛＝宝石・刃物／壬＝大河／癸＝雨露）。比喩から先の言い換えはこの読みの表現であって原典の文言ではない']);
+  c.push(['五行の数え方', '四柱それぞれの天干と地支の五行を一つずつ数える。蔵干は数に入れない。時柱が無ければその分だけ合計が減る']);
+  c.push(['五行の関係', '相生（木生火生土生金生水生木）と相剋（木剋土剋水剋火剋金剋木）のみを使う。用神・喜忌の判定はしない（[不能]）']);
+  c.push(['月令に対する位置', '旺相休囚死（当令者旺・令生者相・生令者休・剋令者囚・令剋者死）。ここから身強・身弱を断定することはしない（[不能]）']);
+  c.push(['柱の対応', '年柱＝生まれ育った側／月柱＝働きの場／日柱＝本人／時柱＝先の時間。年齢区分の年数は流派差が大きいため出さない']);
+  c.push(['算命学の表', '十大主星は十神の再命名として写像（高尾学館系の対応）。星の意味は写像元の十神から導いている。十二大従星は十二運から写像し、エネルギーの点数は出さない。人体星図の配置は未採用（[不能]）']);
+  c.push(['宿曜道の方式', '伝統暦方式を正とする。本命宿 =（旧暦月の朔日宿 + 旧暦日 − 1）mod 27。閏月は直前の通常月と同じ朔日宿。天文方式は比較資料。宿ごとの人物像は未採用（[不能]）']);
   c.push(['七十二候', '日本の本朝七十二候（明治7年・略本暦の系統）。中国の宣明暦系とは名称が異なる']);
   c.push(['真太陽時', '未算出。標準時（UTC+9）のまま扱っている'
     + (input.place ? '（出生地の入力はあるが経度補正は未実装）' : '（出生地の入力なし）')]);
@@ -528,7 +536,8 @@ return {
   JUDAI: JUDAI, JUJUSEI: JUJUSEI, STAGES: STAGES,
   gz: gz, tenGod: tenGod, juniun: juniun, tenchusatsu: tenchusatsu,
   buildPillars: buildPillars, analyze: analyze, sanmei: sanmei,
-  shukuyo: shukuyo, sanku: sanku, read: read, moonBand: moonBand
+  shukuyo: shukuyo, sanku: sanku, read: read,
+  relOf: relOf, commandState: commandState, structure: structure
 };
 })();
 if (typeof module !== 'undefined' && module.exports) module.exports = READ;
