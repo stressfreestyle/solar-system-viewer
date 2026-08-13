@@ -318,29 +318,60 @@ details.sec>summary em{font-style:normal;font-weight:600;font-size:calc(11px * v
   border-radius:10px;padding:11px 13px;font-size:calc(10.5px * var(--tscale));line-height:1.7;color:#e6cfa4;margin-bottom:14px}
 .warn b{color:#ffd89a}
 
-/* 火（法則）は隠れ身。表には一行だけ置き、「法則」の文字をタップすると
-   ポップアップで立て方の全文が出る。火を常時前面に置かない形。 */
+/* ---- 表と裏（第9フェーズ） ----
+   表 = 一般向けの読み解きの散文。裏 = その裏に走っている法則（アルゴリズム）。
+   裏は「法則」チップをタップしたときだけ出る。
+   ポップアップの実体は #lawpop ひとつだけで、中身を差し替えて使う
+   （節が増えても DOM は増えない）。 */
 .fireline{display:flex;align-items:center;gap:8px;flex-wrap:wrap;
   font-size:calc(10.5px * var(--tscale));line-height:1.7;color:#8c9ab5;margin-bottom:14px}
-button.fire{font:inherit;color:#ffd89a;background:rgba(255,190,90,.10);
-  border:1px solid rgba(255,190,90,.34);border-radius:8px;
-  padding:calc(5px * var(--tscale)) calc(11px * var(--tscale));
-  font-weight:700;cursor:pointer;letter-spacing:.04em}
-button.fire:focus-visible{outline:2px solid #ffd89a;outline-offset:2px}
 .fireline .hint{font-size:calc(9.5px * var(--tscale));color:#6b7796}
 
-#firepop{position:fixed;inset:0;z-index:60;display:none;
+/* 「法則」チップ。表のどこに置いても同じ見た目にする。
+   見出しの脇・断定ブロックの中・冒頭の一行、すべてこれ1種類。 */
+button.law{font:inherit;color:#ffd89a;background:rgba(255,190,90,.10);
+  border:1px solid rgba(255,190,90,.34);border-radius:8px;
+  padding:calc(4px * var(--tscale)) calc(10px * var(--tscale));
+  font-size:calc(10px * var(--tscale));line-height:1.25;
+  font-weight:700;cursor:pointer;letter-spacing:.04em;white-space:nowrap;
+  flex:0 0 auto;-webkit-tap-highlight-color:transparent}
+button.law:focus-visible{outline:2px solid #ffd89a;outline-offset:2px}
+button.law::before{content:'▤';margin-right:4px;font-weight:400;opacity:.75}
+.rsec>h3 button.law{margin-left:auto;align-self:center}
+/* 断定ブロックの中の導線。その断定を支える記号へ1タップで行く */
+.rd .lawrow{display:flex;align-items:center;gap:8px;margin-top:10px;
+  padding-top:9px;border-top:1px solid rgba(255,255,255,.075)}
+.rd .lawrow u{text-decoration:none;font-size:calc(9.5px * var(--tscale));color:#7d8ca8;line-height:1.5}
+
+#lawpop{position:fixed;inset:0;z-index:60;display:none;
   background:rgba(4,6,12,.72);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);
   align-items:center;justify-content:center;
   padding:calc(var(--sat) + 18px) calc(var(--sar) + 16px) calc(var(--sab) + 18px) calc(var(--sal) + 16px)}
-#firepop.open{display:flex}
-#firepop .box{max-width:520px;width:100%;max-height:100%;overflow-y:auto;
+#lawpop.open{display:flex}
+#lawpop .box{max-width:520px;width:100%;max-height:100%;overflow-y:auto;
   background:#111726;border:1px solid rgba(255,190,90,.30);border-radius:14px;
   padding:calc(16px * var(--tscale)) calc(16px * var(--tscale));
   font-size:calc(10.5px * var(--tscale));line-height:1.85;color:#e6cfa4}
-#firepop h4{margin:0 0 10px;font-size:calc(13px * var(--tscale));color:#ffd89a;font-weight:700}
-#firepop b{color:#ffd89a}
-#firepop .close{margin-top:14px;width:100%;font:inherit;font-size:calc(11px * var(--tscale));
+#lawpop h4{margin:0 0 10px;font-size:calc(13px * var(--tscale));color:#ffd89a;font-weight:700;
+  line-height:1.5}
+#lawpop b{color:#ffd89a}
+#lawpop p{margin-bottom:10px}
+#lawpop p:last-child{margin-bottom:0}
+/* 裏の中の見出しと、根拠・法則・但し書きの並び */
+#lawpop h5{margin:16px 0 8px;font-size:calc(11px * var(--tscale));font-weight:700;color:#ffd89a;
+  letter-spacing:.04em;padding-bottom:5px;border-bottom:1px solid rgba(255,190,90,.22)}
+#lawpop h5:first-child{margin-top:0}
+#lawpop .ev{background:rgba(255,190,90,.07);border-left:2px solid rgba(255,190,90,.45);
+  border-radius:0 7px 7px 0;padding:8px 10px;margin-bottom:8px;line-height:1.75}
+#lawpop .ev.hl{background:rgba(255,190,90,.16);border-left-color:#ffd89a}
+#lawpop .lrow{display:flex;gap:10px;padding:7px 0;line-height:1.7;
+  border-top:1px solid rgba(255,190,90,.14)}
+#lawpop .lrow:first-of-type{border-top:0}
+#lawpop .lrow>i{font-style:normal;color:#c7ab7c;flex:0 0 36%;min-width:0;overflow-wrap:anywhere}
+#lawpop .lrow>b{font-weight:600;flex:1;min-width:0;overflow-wrap:anywhere;color:#efe0c4}
+#lawpop .guard{color:#c9b48c;font-size:calc(10px * var(--tscale));line-height:1.75;
+  margin-top:8px;padding:8px 10px;border:1px dashed rgba(255,190,90,.28);border-radius:8px}
+#lawpop .close{margin-top:16px;width:100%;font:inherit;font-size:calc(11px * var(--tscale));
   padding:calc(11px * var(--tscale)) 0;border-radius:10px;cursor:pointer;
   background:rgba(255,190,90,.14);border:1px solid rgba(255,190,90,.34);color:#ffd89a}
 
@@ -531,17 +562,13 @@ button.fire:focus-visible{outline:2px solid #ffd89a;outline-offset:2px}
   <div id="readbody"></div>
 </div>
 
-<!-- 火（法則）の隠れ身。読みの冒頭の「法則」をタップしたときだけ出る -->
-<div id="firepop" role="dialog" aria-modal="true" aria-labelledby="firepopTitle">
+<!-- 裏（法則）の置き場。実体はこの1つだけで、中身を差し替えて使う。
+     「法則」チップをタップしたときだけ出る。 -->
+<div id="lawpop" role="dialog" aria-modal="true" aria-labelledby="lawpopTitle">
   <div class="box">
-    <h4 id="firepopTitle">この読みの立て方</h4>
-    <p><b>法則が主です。</b><br>
-    生年月日・暦記号・星の配置は、法則が現れた一つの面（<b>従</b>）。<br>
-    あなたの生活・履歴・環境・選択・行動も、法則が展開したもう一つの面（<b>従</b>）。<br>
-    この読みは、法則を星の配置に照らして、生活の側に何が展開しているかを読み解くものです。だから断定で書きます。</p>
-    <p>断定してよいのは、下に出した記号と、採用した象意・生剋の関係から導けることだけです。導けないことは書かず、最後の「見えていない部分」に置いてあります。</p>
-    <p>読みと実際の出来事が食い違って見えるときは、法則が外れたのではなく、展開が別の面に出ているか、まだその面が見えていないと考えます。どの面に出ているかは、あなたが実際の出来事で確かめるほかありません。当たり外れを数値にすることはしません。</p>
-    <button type="button" class="close" id="firepopClose">閉じる</button>
+    <h4 id="lawpopTitle">法則</h4>
+    <div id="lawpopBody"></div>
+    <button type="button" class="close" id="lawpopClose">閉じる</button>
   </div>
 </div>
 
@@ -554,6 +581,8 @@ button.fire:focus-visible{outline:2px solid #ffd89a;outline-offset:2px}
 /*__READING_CONTENT__*/
 
 /*__READING_CORE__*/
+
+/*__READING_VIEW__*/
 
 /* =====================================================================
    1. 天体力学 — JPL / E.M.Standish 平均軌道要素による日心黄道座標
@@ -2355,21 +2384,43 @@ document.getElementById('bClear').addEventListener('click', function () {
    確信をもって固定できないため、ここだけは断定せず [不能] に置く。
    =================================================================== */
 var readEl = document.getElementById('read'), readOpen = false;
-function closeRead() { readOpen = false; readEl.classList.remove('open'); }
+function closeRead() { readOpen = false; readEl.classList.remove('open'); closeLaw(); }
 document.getElementById('readClose').addEventListener('click', closeRead);
 
-/* 火（法則）の隠れ身。読みは毎回 innerHTML で組み直すので、
-   #fireBtn への直接のリスナーではなく readbody への委譲で拾う。 */
-var firePop = document.getElementById('firepop');
-function openFirePop() { firePop.classList.add('open'); }
-function closeFirePop() { firePop.classList.remove('open'); }
+/* 裏（法則）の汎用ポップアップ。
+   -------------------------------------------------------------------
+   オーバーレイは #lawpop 1つだけ。中身は lawStore（id → {title, html}）から
+   流し込む。節が増えてもポップアップ用の DOM は増えない。
+   読みは毎回 innerHTML で組み直すので、チップへの直接のリスナーではなく
+   readbody への委譲で拾う。 */
+var lawPop = document.getElementById('lawpop');
+var lawPopBody = document.getElementById('lawpopBody');
+var lawPopTitle = document.getElementById('lawpopTitle');
+
+function openLaw(id, hl) {
+  var L = lawStore && lawStore[id];
+  if (!L) return;
+  lawPopTitle.textContent = L.title;
+  lawPopBody.innerHTML = L.html;
+  lawPop.classList.add('open');
+  lawPop.querySelector('.box').scrollTop = 0;
+  /* 断定ブロックから開いたときは、その断定を支える記号を目立たせて先頭に見せる */
+  if (hl) {
+    var t = lawPopBody.querySelector('[data-ev="' + hl + '"]');
+    if (t) { t.classList.add('hl'); if (t.scrollIntoView) t.scrollIntoView({ block: 'nearest' }); }
+  }
+}
+function closeLaw() { lawPop.classList.remove('open'); }
+
 document.getElementById('readbody').addEventListener('click', function (e) {
-  if (e.target && e.target.id === 'fireBtn') openFirePop();
+  var b = e.target.closest ? e.target.closest('button.law') : null;
+  if (!b) return;
+  openLaw(b.getAttribute('data-law'), b.getAttribute('data-ev'));
 });
-document.getElementById('firepopClose').addEventListener('click', closeFirePop);
-firePop.addEventListener('click', function (e) { if (e.target === firePop) closeFirePop(); });
+document.getElementById('lawpopClose').addEventListener('click', closeLaw);
+lawPop.addEventListener('click', function (e) { if (e.target === lawPop) closeLaw(); });
 document.addEventListener('keydown', function (e) {
-  if (e.key === 'Escape' && firePop.classList.contains('open')) closeFirePop();
+  if (e.key === 'Escape' && lawPop.classList.contains('open')) closeLaw();
 });
 
 function esc(s) {
@@ -2378,367 +2429,23 @@ function esc(s) {
   });
 }
 function chip(t) { return '<span class="chip c' + t + '">' + t + '</span>'; }
-function row(k, v) { return '<div class="rrow"><i>' + k + '</i><b>' + v + '</b></div>'; }
 
-/* 断定の畳みかけ（短い文を改行で重ねる） */
-function beat(words) {
-  var s = '<div class="beat">';
-  for (var i = 0; i < words.length; i++) s += '<span>' + esc(words[i]) + '。</span>';
-  return s + '</div>';
-}
-/* 1つの読みブロック。src（根拠）は必ず付ける。 */
-function rd(src, says, turn) {
-  var s = '<div class="rd"><div class="src">' + src + '</div>';
-  for (var i = 0; i < says.length; i++) s += says[i];
-  if (turn) {
-    var t = (typeof turn === 'string') ? [turn] : turn;
-    for (var j = 0; j < t.length; j++) s += '<div class="turn">' + t[j] + '</div>';
-  }
-  return s + '</div>';
-}
-function say(t) { return '<div class="say">' + t + '</div>'; }
+/* 描画は src/reading-view.js（RVIEW）が持つ。DOM を触らない純粋な
+   文字列組み立てにしてあるので、node のテストから同じものを検査できる。 */
+RVIEW.bind(RC, READ);
 
-/* 面の見え方を記録する枠。断定した節ごとに1つ置く。
-   読みの当否を採点するのではなく、いま見ている面に出ているかを本人が残す。 */
-function faceBox(id, question) {
-  var st = statusStore[id] || 'untested';
-  var s = '<div class="face" data-h="' + esc(id) + '">'
-        + '<div class="fq"><u>この面に出ているかを見る問い</u>' + esc(question) + '</div>'
-        + '<div class="stat">';
-  RC.STATUS.forEach(function (x) {
-    s += '<button data-s="' + x.key + '"' + (st === x.key ? ' class="on"' : '') + '>' + x.label + '</button>';
-  });
-  return s + '</div></div>';
-}
+/* 裏（法則）の中身。描画のたびに作り直す。id → { title, html } */
+var lawStore = {};
 
 function showReading(inp) {
   var R = READ.read(inp);
   lastReading = R;
-  var P = R.pillars, A = R.analysis, S = R.sanmei, K = R.shukuyo, cal = R.calendar, X = R.structure;
-  var st = RC.STEM10[P.dmName];
-  var H = [];
-  var faceIds = [];
-  function face(id, q) { faceIds.push(id); return faceBox(id, q); }
-
-  document.getElementById('readsub').textContent =
-    inp.y + '年' + inp.m + '月' + inp.d + '日' + (inp.hasTime ? ' ' + pad(inp.hh) + ':' + pad(inp.mi) : '（時刻なし）');
-
-  /* --- 冒頭。火（法則）は隠れ身にして、一行だけ置く --- */
-  H.push('<div class="fireline">この読みの立て方は'
-    + '<button type="button" class="fire" id="fireBtn">法則</button>'
-    + '<span class="hint">タップで表示</span></div>');
-
-  /* =================== 1. 基本命式 =================== */
-  H.push('<div class="rsec"><h3>1. 基本命式 <span>解釈の前に固定したもの</span></h3>');
-  H.push('<div class="pill">');
-  P.pillars.forEach(function (p) {
-    H.push('<div><u>' + p.name + '</u><s>' + p.gz + '</s><em>' + p.stemElem + '／' + p.branchElem
-      + '<br>' + (p.name === '日柱' ? '日主' : p.tenGodStem) + '</em></div>');
-  });
-  if (!inp.hasTime) H.push('<div><u>時柱</u><s>不明</s><em>出生時刻の入力が<br>ないため算出せず</em></div>');
-  H.push('</div>');
-  if (!inp.hasTime) {
-    H.push('<p class="lead">出生時刻が不明なので、<b>時柱は出していません</b>。'
-      + '正午などで埋めた推測値も作っていません。時柱から読める部分は、この読みには入っていません。</p>');
-  }
-  H.push(row(chip('計算') + '日主', P.dmName + '（' + P.dmYin + P.dmElem + '）'));
-  H.push(row(chip('計算') + '生年月日', esc(inp.y + '-' + pad(inp.m) + '-' + pad(inp.d))));
-  H.push(row(chip('計算') + '出生時刻', inp.hasTime ? esc(pad(inp.hh) + ':' + pad(inp.mi)) : '不明'));
-  H.push(row(chip('計算') + '出生地', inp.place ? esc(inp.place) : '不明'));
-  H.push(row('呼称・性別など', inp.gender ? esc(inp.gender)
-    + '<br><span class="sub">呼称と、本人が確認する文脈の質問にのみ使用。性格・能力・役割・運勢の算出には使っていません。</span>'
-    : '未入力'));
-  H.push(row(chip('計算') + '節気・候',
-    cal.sekki.name + '／第' + cal.kou.no + '候 ' + cal.kou.kanji + '（' + cal.kou.yomi + '）'));
-  H.push(row(chip('計算') + '旧暦',
-    (cal.lunar.leap ? '閏' : '') + cal.lunar.month + '月' + cal.lunar.day + '日'));
-  /* 読みの中では割合の数字を出さない（このアプリの他の場所の％表示と
-     混同されないようにするため）。月相は名称と月齢の日数だけにする。 */
-  H.push(row(chip('計算') + '月相', cal.moon.name + '（月齢' + cal.moon.age.toFixed(1) + '日）'));
-  H.push(row(chip('計算') + '50音歴', '第' + cal.gojuon.no + '音「' + cal.gojuon.sound + '」'));
-  H.push(row(chip('伝統') + '柱の対応',
-    ['年柱', '月柱', '日柱', '時柱'].map(function (n) {
-      return n + '＝' + RC.PILLAR_ROLE[n];
-    }).join('<br>')
-    + '<br><span class="sub">年齢区分の年数は流派差が大きいため出していません。</span>'));
-  H.push('<p class="lead mt">採用した流派・表・境界は次のとおりです。'
-    + '解釈より先に、ここを固定しています。</p>');
-  R.conventions.forEach(function (c) { H.push(row(c[0], esc(c[1]))); });
-  H.push('</div>');
-
-  /* =================== 2. 四柱推命で見る本質 =================== */
-  H.push('<div class="rsec"><h3>2. 四柱推命で見る本質 <span>日主・月令・支の重なり・日柱</span></h3>');
-  H.push('<p class="lead">' + RC.NOTES.faceLead + '</p>');
-
-  /* 日主 */
-  H.push(rd(
-    chip('伝統') + '日干は' + P.dmName + '。' + P.dmYin + 'の' + P.dmElem + '。象意は「' + st.metaphor + '」。',
-    [ say('本質は、<em>' + st.metaphor + '</em>のような人です。'),
-      say(st.core + '。'),
-      say(st.logic),
-      beat(st.verbs),
-      say(RC.YINYANG[P.dmYin] + '（' + P.dmName + 'は' + P.dmYin + '干）') ],
-    [ st.challenge + 'この人の本質は、<em>' + st.essence + '</em>です。',
-      st.contrast ]));
-
-  /* 月令 */
-  H.push(rd(
-    chip('計算') + '月支は' + X.monthBranch + '。' + X.monthElem + '。日主は' + X.dmElem + '。'
-      + '月令に対する位置は「' + X.command + '」。',
-    [ say(RC.COMMAND_MEAN[X.command]),
-      say('<span class="sub">' + RC.NOTES.commandGuard
-        + 'ここから身強・身弱を断定することはしていません。数え方が流派で違うためです。</span>') ]));
-
-  /* 支の重なり */
-  if (X.repeats.length) {
-    X.repeats.forEach(function (r) {
-      var rel = READ.relOf(READ.ELEM.indexOf(X.dmElem), READ.ELEM.indexOf(r.elem));
-      H.push(rd(
-        chip('計算') + '地支に' + r.branch + 'が' + r.n + 'つ。' + r.branch + 'は' + r.yin + 'の' + r.elem
-          + '（蔵干 ' + r.hidden.join('・') + '）。',
-        [ say('同じ支が重なるほど、その五行の働きは分散せず一方向に出ます。'
-            + 'この命式で重なっているのは、' + RC.ELEM_WORK[r.elem] + 'です。'),
-          say(r.elem + 'は' + RC.REL_NAME[rel] + '。'
-            + '厚さの意味は次の節でまとめて見ます。') ]));
-    });
-  } else {
-    H.push(rd(chip('計算') + '地支に同じ支の重なりはありません。',
-      [ say('支の働きは一方向に集まらず、それぞれ別の方向を向いています。'
-          + '厚みで押すのではなく、面の広さで対応する作りです。') ]));
-  }
-
-  /* 日柱 */
-  H.push(rd(
-    chip('計算') + '日柱は' + X.day.gz + '。日支' + X.day.branch + 'の蔵干の本気は' + X.day.hiddenMain
-      + 'で、日主から見て' + X.day.tenGodMain + '。十二運は' + X.day.stage + '。',
-    [ say('日柱は本人そのものの柱です。その座下に置いているのが' + X.day.tenGodMain + '。'
-        + RC.TENGOD_MEAN[X.day.tenGodMain] + 'この働きの上に立っています。'),
-      say('十二運は' + X.day.stage + '。' + RC.STAGE_MEAN[X.day.stage]
-        + (/^(病|死|墓|絶)$/.test(X.day.stage)
-           ? '<span class="sub">' + RC.NOTES.stageGuard + '</span>' : '')) ]));
-  H.push(face('face.shichu', RC.SECTION_CHECK.shichu));
-  H.push('</div>');
-
-  /* =================== 3. 五行の偏り =================== */
-  H.push('<div class="rsec"><h3>3. 五行の偏り <span>何が厚く、何が無いか</span></h3>');
-  H.push(row(chip('計算') + '五行の記号数',
-    A.elems.map(function (e) { return e.elem + e.count; }).join('　')
-    + '<br><span class="sub">' + RC.NOTES.gogyoRule + '</span>'));
-
-  H.push(rd(
-    chip('計算') + X.heaviest.elem + 'が' + X.heaviest.count + 'つ。この命式でいちばん多い五行。',
-    [ say(X.heaviest.elem + 'は' + RC.ELEM_WORK[X.heaviest.elem] + '。それが厚く出ています。'),
-      say(RC.HEAVY[X.heaviest.rel]) ]));
-
-  if (X.lacking.length) {
-    X.lacking.forEach(function (L) {
-      var d = RC.LACK[X.dmElem][L.rel];
-      H.push(rd(
-        chip('計算') + L.elem + 'が命式に一つも現れません。'
-          + L.elem + 'は日主' + X.dmElem + 'から見て' + RC.REL_NAME[L.rel] + '。',
-        [ say(L.elem + 'は' + RC.ELEM_WORK[L.elem] + '。それが記号の面に無いということです。'),
-          say(d.effect) ]));
-    });
-    H.push('<p class="lead">欠けている五行は、欠陥ではありません。方向です。'
-      + '無い働きは内側で自動化されないので、外から入れる形になります。'
-      + '何が入るとどう変わるかは、7節にまとめてあります。</p>');
-  } else {
-    H.push(rd(chip('計算') + '五行はすべて現れています。欠けている方向はありません。',
-      [ say('どの働きも記号の面に出ています。だから足りないものを外から補うより、'
-          + '厚い方向と薄い方向の配分をどう置くかが、この命式の課題になります。') ]));
-  }
-  H.push('<p class="lead mt">' + RC.NOTES.noYojin + '</p>');
-  H.push(face('face.gogyo', RC.SECTION_CHECK.gogyo));
-  H.push('</div>');
-
-  /* =================== 4. 算命学で見る本質 =================== */
-  H.push('<div class="rsec"><h3>4. 算命学で見る本質 <span>十大主星・十二大従星</span></h3>');
-  H.push(rd(
-    chip('伝統') + S.stars.map(function (s) { return s.src + '（' + s.tenGod + '）→ ' + s.star; }).join('／'),
-    X.stars.map(function (s) {
-      var m = RC.JUDAI_MEAN[s.star];
-      return say('<em>' + s.star + '</em>（' + m.from + 'の再命名）。' + m.line
-        + (s.n >= 2 ? s.star + 'は' + s.n + 'つ。この働きが重なって出ています。' : ''));
-    })));
-  var juSays = S.jusei.map(function (j) {
-    return say('<em>' + j.star + '</em>（' + j.src.split(' ')[0] + '）。' + RC.JUJUSEI_MEAN[j.star]);
-  });
-  /* 本人の柱（日柱）と、それ以外の柱で従星が違うときは、そこが対比になる */
-  var dayJu = S.jusei[2].star, outerJu = [];
-  S.jusei.forEach(function (j, i) {
-    if (i !== 2 && outerJu.indexOf(j.star) < 0) outerJu.push(j.star);
-  });
-  if (outerJu.indexOf(dayJu) < 0) {
-    juSays.push(say('外側の柱は' + outerJu.join('と') + '。本人の柱は' + dayJu + '。'
-      + '外側と本人が、周期の別の位置に置かれています。'));
-  }
-  juSays.push(say('<span class="sub">' + RC.NOTES.stageGuard + '</span>'));
-  H.push(rd(
-    chip('伝統') + S.jusei.map(function (j) { return j.src + '（' + j.stage + '）→ ' + j.star; }).join('／'),
-    juSays));
-  H.push('<div class="warn"><b>人体星図の配置は出していません。</b>'
-    + '頭・胸・腹・左手・右手・肩・足のどこにどの星が入るかという配置表は、'
-    + '流派ごとに違い、確信をもって固定できませんでした。'
-    + '推測で埋めると、誤った構造を事実として出すことになります。'
-    + '<b>この節でここだけは断定していません。</b>星そのものは上に出しています。</div>');
-  H.push(face('face.sanmei', RC.SECTION_CHECK.sanmei));
-  H.push('</div>');
-
-  /* =================== 5. 天中殺 =================== */
-  H.push('<div class="rsec"><h3>5. 天中殺 <span>算術の事実と、そこから言えること</span></h3>');
-  H.push(rd(
-    chip('計算') + '日柱' + X.day.gz + 'は' + S.dayTenchusatsu.junStart + 'の旬。'
-      + '十干10と十二支12の差で、一旬に必ず二支が余る。この命式では'
-      + X.tcs.branches.join('と') + '（' + X.tcs.elems.join('・') + '）。'
-      + '年柱では' + S.yearTenchusatsu.name + '。',
-    [ say('ここまでは算術です。10ずつ区切れば12のうち2つが必ず残る、というだけのことです。'),
-      say('余る二支が指すのは' + X.tcs.elems.join('と') + '。'
-        + X.tcs.elems.map(function (e) { return RC.ELEM_SHORT[e]; }).join('と') + 'の方向です。'),
-      say(RC.TCS_OVERLAP[X.tcs.overlap]) ],
-    '<span class="sub">' + RC.NOTES.tcsGuard + '</span>'));
-  H.push(face('face.tenchu', RC.SECTION_CHECK.tenchu));
-  H.push('</div>');
-
-  /* =================== 6. 宿曜道で見る本質 =================== */
-  H.push('<div class="rsec"><h3>6. 宿曜道で見る本質 <span>採用方式：伝統暦方式</span></h3>');
-  H.push(row(chip('伝統') + '本命宿',
-    '<b class="big">' + K.name + '</b>'
-    + '<br><span class="sub">' + esc(K.formula) + '</span>'
-    + (K.leapNote ? '<br><span class="sub">' + esc(K.leapNote) + '</span>' : '')));
-  H.push(rd(
-    chip('計算') + '旧暦' + K.lunarMonth + '月' + K.lunarDay + '日。'
-      + '朔日宿は' + K.sakujitsu + '。生まれた日の月相は' + cal.moon.name
-      + '（月齢' + cal.moon.age.toFixed(1) + '日）。',
-    [ say('本命宿は、旧暦の日付から一つに決まります。'
-        + '朔から数えて' + K.lunarDay + '日目という位置を、27の区画に写したものが' + K.name + 'です。'),
-      say('本命宿も月相も、朔からの経過を表しています。'
-        + '独立した二つの根拠ではありません。ここを重ねて数えることはしません。') ]));
-  H.push(row(chip('計算') + '（比較資料）天文方式',
-    K.astro.name + '（月の恒星黄経 ' + K.astro.sidLon.toFixed(2) + '°／ラヒリ）'
-    + '<br><span class="sub">'
-    + (K.agrees ? 'たまたま一致しました。' : '伝統暦方式とは<b>異なります</b>。')
-    + '両者は別のモデルなので一致するとは限りません。宿曜道としては上の伝統暦方式を正とし、'
-    + 'これは比較のためだけに出しています。混ぜて使っていません。</span>'));
-  H.push('<div class="warn"><b>宿から人物像は出していません。</b>'
-    + RC.NOTES.shukuLimit
-    + '<br><br>三九の関係表（宿番号の差から関係名を出す並び）も、並びに流派差があるため'
-    + '<b>使っていません</b>。相手の生年月日が要ることもあり、単独の読みには含めていません。</div>');
-  H.push('</div>');
-
-  /* =================== 7. 真理構造からの統合 =================== */
-  H.push('<div class="rsec"><h3>7. 真理構造からの統合 <span>三つのモデルを足し合わせずに並べる</span></h3>');
-  H.push('<p class="lead">四柱推命・算命学・宿曜道は別々のモデルです。結果をそのまま合算しません。'
-    + 'ここでは、同じ命式が三つの言い方でどう見えるかを並べ、'
-    + '一つの流れとして読みます。流派をまたいだ一致は「象徴が重なった」というだけで、'
-    + '科学的な裏づけではありません。</p>');
-  var togo = [
-    say('<em>' + P.dmName + X.dmElem + '</em>。' + st.core + '。'),
-    say('この命式でいちばん厚いのは' + X.heaviest.elem + '。'
-      + st.verbs.slice(0, 3).join('・') + 'という働きを、その厚さがそのまま支えています。'),
-    say('<span class="sub">算命学の星（' + X.stars.slice(0, 3).map(function (s) { return s.star; }).join('・')
-      + '…）は、四柱推命の十神を別の名で呼んだものです。'
-      + '同じ命式を二度数えないよう、ここでは独立した根拠として扱っていません。'
-      + '宿曜道の本命宿も、旧暦の日付から出るもので、四柱とは別の暦を見ています。</span>')
-  ];
-  if (X.lacking.length) {
-    togo.push(say('そして' + X.lacking.map(function (L) { return L.elem; }).join('と')
-      + 'が現れません。'
-      + X.lacking.map(function (L) { return RC.ELEM_SHORT[L.elem]; }).join('と')
-      + 'が、記号の面には無いということです。'));
-    X.lacking.forEach(function (L) {
-      togo.push(say(RC.LACK[X.dmElem][L.rel].supply));
-    });
-    if (X.tcs.overlap === 'lack') {
-      togo.push(say('天中殺で余る二支も、同じ方向を指しています。'
-        + '持っていない働きと、旬の中で欠ける支が、一つの方向に揃っている構造です。'));
-    }
-  }
-  togo.push(say('つまりこの人は、' + st.verbs.slice(0, 2).join('・') + 'という働きで立っていて、'
-    + '<em>' + st.essence + '</em>——そこへ向かうかどうかが分かれ目になります。'));
-  H.push(rd(chip('読み') + '2〜6節で出した記号を、一つの流れとして並べたもの。', togo));
-  H.push('<p class="lead mt">' + RC.NOTES.dualNote + '</p>');
-  H.push(face('face.togo', RC.SECTION_CHECK.togo));
-  H.push('</div>');
-
-  /* =================== 8. 向いている場・役割 =================== */
-  H.push('<div class="rsec"><h3>8. 向いている場・役割 <span>職業名ではなく、場の条件</span></h3>');
-  var baSays = [ say(RC.ELEM_WORK[X.dmElem] + 'が要る場で働きます。'
-    + 'それが要らない場に置かれると、同じ力が使い道を失います。') ];
-  var topAxis = A.axesRanked[0];
-  if (RC.BA_AXIS[topAxis.axis]) {
-    baSays.push(say('命式でいちばん多いのは' + topAxis.axis + '（' + topAxis.count + '個）。'
-      + RC.BA_AXIS[topAxis.axis].many));
-  }
-  A.axes.forEach(function (a) {
-    if (a.count === 0 && RC.BA_AXIS[a.axis]) {
-      baSays.push(say(a.axis + 'の記号が一つも現れません。' + RC.BA_AXIS[a.axis].none));
-    }
-  });
-  H.push(rd(chip('読み') + '五軸の個数は '
-    + A.axes.map(function (a) { return a.axis + a.count; }).join('　') + '。日主は' + P.dmName + '。',
-    baSays));
-  H.push('<p class="lead mt">' + RC.NOTES.noJob + '</p>');
-  H.push(face('face.ba', RC.SECTION_CHECK.ba));
-  H.push('</div>');
-
-  /* =================== 9. 一言でまとめると =================== */
-  H.push('<div class="rsec"><h3>9. 一言でまとめると <span></span></h3>');
-  H.push('<div class="one">');
-  H.push('<p>' + P.dmName + X.dmElem + '。' + st.core + '。</p>');
-  H.push('<p>本質は、' + st.essence + '。</p>');
-  if (X.lacking.length) {
-    H.push('<p>そのために要るのは、'
-      + X.lacking.map(function (L) { return RC.ELEM_SHORT[L.elem]; }).join('と')
-      + '。それは外から入れるものです。</p>');
-  } else {
-    H.push('<p>要るものは、命式の中にそろっています。'
-      + 'あとは、どこにどれだけ配るかです。</p>');
-  }
-  H.push('</div>');
-  H.push('<div class="warn" style="margin-top:12px">「魂の目的」「使命」「前世」は生年月日から'
-    + '確定できる種類の事柄ではありません。以下は<b>あなたが選べる中心課題の候補</b>を'
-    + '問いの形にしたものです。選んで、継続した行動で意味を与えたテーマだけが、'
-    + 'あなたの目的になります。</div>');
-  A.axesRanked.slice(0, 2).forEach(function (a) {
-    if (RC.PURPOSE_QUESTIONS[a.axis]) {
-      H.push('<div class="rlead"><p>' + chip('読み') + esc(RC.PURPOSE_QUESTIONS[a.axis]) + '</p></div>');
-    }
-  });
-  H.push('</div>');
-
-  /* =================== 10. 見えていない部分 =================== */
-  H.push('<div class="rsec"><h3>10. 見えていない部分 <span>算出できないもの／記録の残し方</span></h3>');
-  R.fudo.forEach(function (f) {
-    H.push(row(chip('不能') + esc(f.what), esc(f.why)));
-  });
-  H.push(row(chip('確認'), inp.self
-    ? 'あなたが書いた「' + esc(inp.self.slice(0, 80)) + (inp.self.length > 80 ? '…' : '') + '」は、'
-      + '上の読みと突き合わせる材料です。生活の面に出ていると見えたものを'
-      + chip('確認') + 'に移してください。'
-      + '<br><span class="sub">この記録はアプリではなくあなたが付けます。各節の状態ボタンで残せます。</span>'
-    : 'まだありません。各節の状態ボタンで、どの面に出ているかを記録できます。'));
-  H.push(row(chip('別面'), 'いま見ている面に出ていなかったものは、消さずに「別の面に出ている」として残してください。'
-    + '<br><span class="sub">それは外れた記録ではなく、'
-    + 'どこを探せばよいかが一つ分かった記録です。'
-    + '同じ法則でも、現れる面が変われば形が変わります。'
-    + 'ずれているのは法則ではなく、いまどの面を見ているかです。</span>'));
-  /* 前の版で付けた記録を黙って消さない。表示できないものは、あることだけ伝える。 */
-  var orphan = [];
-  for (var ok in statusStore) {
-    if (faceIds.indexOf(ok) < 0 && statusStore[ok] && statusStore[ok] !== 'untested') orphan.push(ok);
-  }
-  if (orphan.length) {
-    H.push(row(chip('確認') + '前の版で付けた記録',
-      orphan.length + '件あります。前の版は項目の区切り方が違ったため、この画面には出せません。'
-      + '<br><span class="sub">消してはいません。端末の中にそのまま残しています。</span>'));
-  }
-  H.push('<p class="lead mt">'
-    + 'この読みは、医療・法律・採用・信用・結婚などの判断には使えません。'
-    + 'そうした判断へ誘導する内容も含めていません。'
-    + '的中率・確率・スコアの類も出していません。</p>');
-  H.push('</div>');
-
-  document.getElementById('readbody').innerHTML = H.join('');
+  var out = RVIEW.render(R, inp, statusStore);
+  document.getElementById('readsub').textContent = out.sub;
+  /* 裏を開いたまま生年月日を変えられても、古い中身が残らないようにする */
+  closeLaw();
+  lawStore = out.laws;
+  document.getElementById('readbody').innerHTML = out.html;
   document.getElementById('readbody').scrollTop = 0;
   readOpen = true; readEl.classList.add('open');
 }

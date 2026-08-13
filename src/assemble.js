@@ -20,6 +20,7 @@ function assemble(opts) {
     '/*__CALENDAR_CORE__*/': stripExport(read('calendar-core.js')),
     '/*__READING_CONTENT__*/': stripExport(read('reading-content.js')),
     '/*__READING_CORE__*/': stripExport(read('reading-core.js')),
+    '/*__READING_VIEW__*/': stripExport(read('reading-view.js')),
     '/*__PWA_BOOT__*/': opts.pwaBoot || '',
     '<!--__HEAD_LINKS__-->': opts.headLinks || ''
   };

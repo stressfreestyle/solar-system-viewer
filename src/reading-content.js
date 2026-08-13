@@ -334,6 +334,17 @@ var COMMAND_MEAN = {
   '死': '生まれ月の気が日主を剋す側。日主の働きは、生まれた季節から締められています。'
 };
 
+/* 月令に対する位置を、専門語を使わずに言い直したもの。
+   表（読み解きの散文）の側で最初に置く一行。
+   専門語のほうの言い方は COMMAND_MEAN が持ち、裏（法則）で説明する。 */
+var COMMAND_PLAIN = {
+  '旺': '生まれた季節が、この人の芯と同じ方を向いています。追い風の中に立っている形です。',
+  '相': '生まれた季節が、この人の芯を後ろから押しています。力を分けてもらう側に置かれています。',
+  '休': '生まれた季節へ向けて、この人の芯から出ていく向きです。渡す側、出す側に置かれています。',
+  '囚': '生まれた季節に対して、この人の芯が押し返す向きです。働きかける側に置かれています。',
+  '死': '生まれた季節が、この人の芯を締める向きです。枠のほうが先にある場所に置かれています。'
+};
+
 /* 天中殺の二支の五行と、命式の五行の重なり方 */
 var TCS_OVERLAP = {
   'lack': '余る二支が指す五行は、この命式に一つも現れません。'
@@ -407,7 +418,8 @@ return { TAGS: TAGS, STATUS: STATUS, STATUS_MIGRATE: STATUS_MIGRATE,
          REL_NAME: REL_NAME, LACK: LACK, HEAVY: HEAVY,
          TENGOD_MEAN: TENGOD_MEAN, STAGE_MEAN: STAGE_MEAN,
          JUDAI_MEAN: JUDAI_MEAN, JUJUSEI_MEAN: JUJUSEI_MEAN,
-         PILLAR_ROLE: PILLAR_ROLE, COMMAND_MEAN: COMMAND_MEAN, TCS_OVERLAP: TCS_OVERLAP,
+         PILLAR_ROLE: PILLAR_ROLE, COMMAND_MEAN: COMMAND_MEAN, COMMAND_PLAIN: COMMAND_PLAIN,
+         TCS_OVERLAP: TCS_OVERLAP,
          SECTION_CHECK: SECTION_CHECK, PURPOSE_QUESTIONS: PURPOSE_QUESTIONS,
          BA_AXIS: BA_AXIS, NOTES: NOTES };
 })();
