@@ -321,6 +321,32 @@ details.sec>summary em{font-style:normal;font-weight:600;font-size:calc(11px * v
   border-radius:10px;padding:11px 13px;font-size:calc(10.5px * var(--tscale));line-height:1.7;color:#e6cfa4;margin-bottom:14px}
 .warn b{color:#ffd89a}
 
+/* 火（法則）は隠れ身。表には一行だけ置き、「法則」の文字をタップすると
+   ポップアップで立て方の全文が出る。火を常時前面に置かない形。 */
+.fireline{display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  font-size:calc(10.5px * var(--tscale));line-height:1.7;color:#8c9ab5;margin-bottom:14px}
+button.fire{font:inherit;color:#ffd89a;background:rgba(255,190,90,.10);
+  border:1px solid rgba(255,190,90,.34);border-radius:8px;
+  padding:calc(5px * var(--tscale)) calc(11px * var(--tscale));
+  font-weight:700;cursor:pointer;letter-spacing:.04em}
+button.fire:focus-visible{outline:2px solid #ffd89a;outline-offset:2px}
+.fireline .hint{font-size:calc(9.5px * var(--tscale));color:#6b7796}
+
+#firepop{position:fixed;inset:0;z-index:60;display:none;
+  background:rgba(4,6,12,.72);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);
+  align-items:center;justify-content:center;
+  padding:calc(var(--sat) + 18px) calc(var(--sar) + 16px) calc(var(--sab) + 18px) calc(var(--sal) + 16px)}
+#firepop.open{display:flex}
+#firepop .box{max-width:520px;width:100%;max-height:100%;overflow-y:auto;
+  background:#111726;border:1px solid rgba(255,190,90,.30);border-radius:14px;
+  padding:calc(16px * var(--tscale)) calc(16px * var(--tscale));
+  font-size:calc(10.5px * var(--tscale));line-height:1.85;color:#e6cfa4}
+#firepop h4{margin:0 0 10px;font-size:calc(13px * var(--tscale));color:#ffd89a;font-weight:700}
+#firepop b{color:#ffd89a}
+#firepop .close{margin-top:14px;width:100%;font:inherit;font-size:calc(11px * var(--tscale));
+  padding:calc(11px * var(--tscale)) 0;border-radius:10px;cursor:pointer;
+  background:rgba(255,190,90,.14);border:1px solid rgba(255,190,90,.34);color:#ffd89a}
+
 /* ---- 断定調の読みブロック（第7フェーズ） ----
    断定文には必ず根拠（命式のどの記号から来たか）を上に付ける。
    .rd = 1つの読み、.src = 根拠、.say = 断定本文、.beat = 短い断定の畳みかけ */
@@ -506,6 +532,20 @@ details.sec>summary em{font-style:normal;font-weight:600;font-size:calc(11px * v
     <button class="xbtn" id="readClose">&times;</button>
   </div>
   <div id="readbody"></div>
+</div>
+
+<!-- 火（法則）の隠れ身。読みの冒頭の「法則」をタップしたときだけ出る -->
+<div id="firepop" role="dialog" aria-modal="true" aria-labelledby="firepopTitle">
+  <div class="box">
+    <h4 id="firepopTitle">この読みの立て方</h4>
+    <p><b>法則が主です。</b><br>
+    生年月日・暦記号・星の配置は、法則が現れた一つの面（<b>従</b>）。<br>
+    あなたの生活・履歴・環境・選択・行動も、法則が展開したもう一つの面（<b>従</b>）。<br>
+    この読みは、法則を星の配置に照らして、生活の側に何が展開しているかを読み解くものです。だから断定で書きます。</p>
+    <p>断定してよいのは、下に出した記号と、採用した象意・生剋の関係から導けることだけです。導けないことは書かず、最後の「見えていない部分」に置いてあります。</p>
+    <p>読みと実際の出来事が食い違って見えるときは、法則が外れたのではなく、展開が別の面に出ているか、まだその面が見えていないと考えます。どの面に出ているかは、あなたが実際の出来事で確かめるほかありません。当たり外れを数値にすることはしません。</p>
+    <button type="button" class="close" id="firepopClose">閉じる</button>
+  </div>
 </div>
 
 <script>
@@ -4036,6 +4076,20 @@ var readEl = document.getElementById('read'), readOpen = false;
 function closeRead() { readOpen = false; readEl.classList.remove('open'); }
 document.getElementById('readClose').addEventListener('click', closeRead);
 
+/* 火（法則）の隠れ身。読みは毎回 innerHTML で組み直すので、
+   #fireBtn への直接のリスナーではなく readbody への委譲で拾う。 */
+var firePop = document.getElementById('firepop');
+function openFirePop() { firePop.classList.add('open'); }
+function closeFirePop() { firePop.classList.remove('open'); }
+document.getElementById('readbody').addEventListener('click', function (e) {
+  if (e.target && e.target.id === 'fireBtn') openFirePop();
+});
+document.getElementById('firepopClose').addEventListener('click', closeFirePop);
+firePop.addEventListener('click', function (e) { if (e.target === firePop) closeFirePop(); });
+document.addEventListener('keydown', function (e) {
+  if (e.key === 'Escape' && firePop.classList.contains('open')) closeFirePop();
+});
+
 function esc(s) {
   return String(s).replace(/[&<>"]/g, function (c) {
     return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
@@ -4087,18 +4141,10 @@ function showReading(inp) {
   document.getElementById('readsub').textContent =
     inp.y + '年' + inp.m + '月' + inp.d + '日' + (inp.hasTime ? ' ' + pad(inp.hh) + ':' + pad(inp.mi) : '（時刻なし）');
 
-  /* --- 冒頭の注意書き（三層の主従を固定する） --- */
-  H.push('<div class="warn"><b>この読みの立て方。法則が主です。</b><br>'
-    + '生年月日・暦記号・星の配置は、法則が現れた一つの面（<b>従</b>）。<br>'
-    + 'あなたの生活・履歴・環境・選択・行動も、法則が展開したもう一つの面（<b>従</b>）。<br>'
-    + 'この読みは、法則を星の配置に照らして、生活の側に何が展開しているかを読み解くものです。'
-    + 'だから断定で書きます。<br><br>'
-    + '断定してよいのは、下に出した記号と、採用した象意・生剋の関係から導けることだけです。'
-    + '導けないことは書かず、最後の「見えていない部分」に置いてあります。<br><br>'
-    + '読みと実際の出来事が食い違って見えるときは、法則が外れたのではなく、'
-    + '展開が別の面に出ているか、まだその面が見えていないと考えます。'
-    + 'どの面に出ているかは、あなたが実際の出来事で確かめるほかありません。'
-    + '当たり外れを数値にすることはしません。</div>');
+  /* --- 冒頭。火（法則）は隠れ身にして、一行だけ置く --- */
+  H.push('<div class="fireline">この読みの立て方は'
+    + '<button type="button" class="fire" id="fireBtn">法則</button>'
+    + '<span class="hint">タップで表示</span></div>');
 
   /* =================== 1. 基本命式 =================== */
   H.push('<div class="rsec"><h3>1. 基本命式 <span>解釈の前に固定したもの</span></h3>');
