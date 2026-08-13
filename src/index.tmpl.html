@@ -166,6 +166,54 @@ details.sec>summary em{font-style:normal;font-weight:600;font-size:calc(11px * v
 .tag{background:rgba(120,180,255,.16);border:1px solid rgba(120,180,255,.3);color:#bcd6ff;
   border-radius:7px;padding:3px 8px;font-size:calc(10.5px * var(--tscale));font-weight:600}
 
+/* ---- 真理構造から見る（第8フェーズ） ----
+   導出の木。どの暦がどの数から出ているかを、線でつないで一目で見せる。 */
+.tsaxis{font-size:calc(10.5px * var(--tscale));line-height:1.7;color:#a9bde8;
+  background:rgba(120,160,240,.1);border-left:2px solid rgba(150,180,255,.5);
+  border-radius:0 8px 8px 0;padding:9px 11px;margin:2px 0 12px}
+.tsh{font-size:calc(11.5px * var(--tscale));font-weight:700;color:#dbe4f5;margin:14px 0 7px;
+  display:flex;align-items:baseline;gap:6px;flex-wrap:wrap}
+.tsh:first-child{margin-top:2px}
+.tsh i{font-style:normal;font-weight:600;font-size:calc(9.5px * var(--tscale));color:#7d8ca8}
+.tsp{font-size:calc(11px * var(--tscale));line-height:1.75;color:#c2cfe6;margin-bottom:8px}
+.tsp em{font-style:normal;color:#fff;font-weight:700}
+/* 木 */
+.tree{background:rgba(0,0,0,.24);border:1px solid rgba(255,255,255,.08);border-radius:11px;
+  padding:11px 12px;margin-bottom:10px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.tree .rt{font-size:calc(12px * var(--tscale));font-weight:700;color:#eaf1ff;white-space:nowrap}
+.tree .rt b{color:#9ec2ff;font-variant-numeric:tabular-nums}
+.tree .rt u{display:block;text-decoration:none;font-size:calc(9.5px * var(--tscale));font-weight:600;
+  color:#7d8ca8;white-space:normal;margin-top:2px}
+.tree ul{list-style:none;margin:6px 0 0;padding:0 0 0 6px}
+.tree li{position:relative;padding:4px 0 4px 20px;font-size:calc(11px * var(--tscale));line-height:1.55;color:#c9d6ec}
+.tree li::before{content:'';position:absolute;left:2px;top:0;bottom:50%;
+  border-left:1px solid rgba(150,180,255,.4);border-bottom:1px solid rgba(150,180,255,.4);
+  width:12px;border-radius:0 0 0 5px}
+.tree li:last-child::after{content:'';position:absolute;left:2px;top:50%;bottom:0;
+  border-left:1px solid rgba(0,0,0,0)}
+.tree li:not(:last-child)::after{content:'';position:absolute;left:2px;top:50%;bottom:0;
+  border-left:1px solid rgba(150,180,255,.4)}
+.tree li s{text-decoration:none;color:#8fb4f0;font-variant-numeric:tabular-nums}
+.tree li b{font-weight:700;color:#eaf1ff}
+.tree li em{font-style:normal;display:block;font-size:calc(9.5px * var(--tscale));color:#7d8ca8;line-height:1.5;margin-top:1px}
+.tree .sub2{margin-top:9px;padding-top:9px;border-top:1px dashed rgba(255,255,255,.12)}
+/* 現在位置のバンド表示 */
+.tsband{display:flex;gap:7px;flex-wrap:wrap;margin:2px 0 8px}
+.tsband>div{flex:1 1 calc(50% - 4px);min-width:calc(120px * var(--tscale));
+  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:9px 10px}
+.tsband u{display:block;text-decoration:none;font-size:calc(9.5px * var(--tscale));color:#8896b1;margin-bottom:3px}
+.tsband b{display:block;font-size:calc(13px * var(--tscale));font-weight:700;color:#eaf1ff}
+.tsband s{display:block;text-decoration:none;font-size:calc(9.5px * var(--tscale));color:#8896b1;
+  margin-top:3px;line-height:1.5;font-variant-numeric:tabular-nums}
+.tsband>div.edge{background:rgba(120,160,240,.13);border-color:rgba(150,180,255,.4)}
+.tsp small{display:block;font-size:calc(9.5px * var(--tscale));color:#7d8ca8;line-height:1.6;margin-top:3px}
+.tsfudo{border-top:1px solid rgba(255,255,255,.055);padding:8px 0;
+  font-size:calc(10px * var(--tscale));line-height:1.65;color:#8896b1}
+.tsfudo:first-of-type{border-top:0}
+.tsfudo u{display:block;text-decoration:none;font-size:calc(11.5px * var(--tscale));font-weight:600;
+  color:#bcc2d0;margin-bottom:3px;line-height:1.5}
+.tsaxis,.tsp,.tree li,.tsfudo{overflow-wrap:anywhere;word-break:break-word}
+
 /* ---- 誕生日パネル / 読みシート 共通 ---- */
 .xbtn{margin-left:auto;border:0;background:rgba(255,255,255,.09);color:#c8d3e8;
   width:34px;height:34px;border-radius:50%;font-size:19px;line-height:1;cursor:pointer;flex:none}
@@ -439,6 +487,10 @@ details.sec>summary em{font-style:normal;font-weight:600;font-size:calc(11px * v
 
     <details class="sec"><summary>二十七宿<em>要確認</em></summary>
       <div class="secbody" id="nakbody"></div>
+    </details>
+
+    <details class="sec"><summary>真理構造から見る<em>六つの暦は二つの回転</em></summary>
+      <div class="secbody" id="tsbody"></div>
     </details>
 
   </div>
@@ -1713,6 +1765,9 @@ function updateCal(force) {
     kv('次月の朔', jstStr(L.nextMonthStartJd)) +
     kv('この年の閏月', L.leapInCycle ? '閏' + L.leapInCycle + '月' : 'なし');
 
+  // ---- 真理構造から見る（第8フェーズ） ----
+  updateTruthStructure(jd, S);
+
   // ---- 二十七宿 ----
   var N = S.nakshatra;
   document.getElementById('nakbody').innerHTML =
@@ -1728,6 +1783,147 @@ function updateCal(force) {
     + 'を採用しています。宿曜経の系統によって起点の宿やアヤナムシャの取り方が異なります。'
     + 'ソース中の <b>NAKSHATRA_CONFIG</b>（ayanamsha と startIndex）1か所で切り替えられます。'
     + 'ayanamsha を 0 にすると回帰黄道になります。</div>';
+}
+
+/* =====================================================================
+   真理構造から見る（第8フェーズ）
+   -------------------------------------------------------------------
+   このパネルが出している六つの暦が、実は二つの回転しか見ていないこと、
+   そのうち太陽の側だけが補正なしで起点に還ることを、計算だけで示す。
+
+   ここに書かないと決めたもの（画面にも [不能] として出す）:
+     ・50音歴の各音の意味・属性・対応表   ← 本人の領域。補完も解釈もしない
+     ・太陽＝火／月＝水 の割り当て        ← 出すのは計算上の非対称だけ
+     ・二十七宿から読む人物像・吉凶
+     ・五行と火水二元の対応づけ
+   吉凶・開運・「今日は〜に良い日」の類も書かない。
+   =================================================================== */
+function tsRow(label, val, sub) {
+  return '<li><s>' + label + '</s> → <b>' + val + '</b>'
+       + (sub ? '<em>' + sub + '</em>' : '') + '</li>';
+}
+function updateTruthStructure(jd, S) {
+  var T = CAL.truthStructure(jd);
+  var L = S.lunar, P = T.pos, MH = T.mesh;
+  var H = [];
+
+  /* 伝統暦方式の二十七宿は、旧暦の日から出る（人物理解で使っている方式）。
+     このパネルの二十七宿は天文方式なので、別ものとして並べる。 */
+  var sakuName = READ.SAKUJITSU[L.month - 1];
+  var tradShuku = READ.SHUKU27[(READ.SHUKU27.indexOf(sakuName) + L.day - 1) % 27] + '宿';
+
+  H.push('<div class="tsaxis">この節は、暦を当てるために置いていません。'
+    + '<b>どの数がどこから出ているか</b>を崩さずに見るために置いています。'
+    + '判断は正しさではなく、構造整合性によって行われる — その軸に合わせています。</div>');
+
+  /* ---- (1) 六つの暦は、二つの回転しかない ---- */
+  H.push('<div class="tsh">' + chip('計算') + '六つの暦は、二つの回転しかない</div>');
+  H.push('<p class="tsp">このパネルは六つの暦を出しています。'
+    + 'しかし独立した数が六つあるわけではありません。<em>回転は二つ</em>です。</p>');
+
+  H.push('<div class="tree"><div class="rt">回転① 太陽の黄経 <b>'
+    + T.sunLon.toFixed(3) + '°</b><u>この一つの数を、粗さの違う目盛りで切っている</u></div><ul>'
+    + T.sunCuts.map(function (c) {
+        return tsRow(c.step + '°ごとに切る', c.name + '　第' + c.no + ' / ' + c.of
+          + '　<b>' + esc(c.value) + '</b>');
+      }).join('')
+    + '</ul></div>');
+
+  H.push('<div class="tree"><div class="rt">回転② 月の回転<u>基準の取り方で、二通りの目盛りになる</u></div>'
+    + '<div class="rt" style="margin-top:8px;font-size:calc(10.5px * var(--tscale));color:#a9bde8">'
+    + '太陽を基準に測る（朔からの位相 <b>' + T.elongation.toFixed(1) + '°</b> ＝ <b>'
+    + T.moonAge.toFixed(2) + '日</b>）</div><ul>'
+    + tsRow('そのまま角度で見る', '月相　<b>' + esc(S.moon.name) + '</b>')
+    + tsRow('日で数える', '旧暦の日　<b>' + (L.leap ? '閏' : '') + L.month + '月' + L.day + '日</b>')
+    + tsRow('旧暦の日から数える', '二十七宿（伝統暦方式）　<b>' + tradShuku + '</b>',
+            '（' + L.month + '月の朔日宿「' + sakuName + '」＋ 旧暦' + L.day + '日 − 1）mod 27。'
+            + '人物理解で使っているのはこちら')
+    + '</ul>'
+    + '<div class="sub2"><div class="rt" style="font-size:calc(10.5px * var(--tscale));color:#a9bde8">'
+    + '恒星を基準に測る（月の恒星黄経 <b>' + S.nakshatra.sidLon.toFixed(2) + '°</b>）</div><ul>'
+    + tsRow('13.33°ごとに切る', '二十七宿（天文方式）　<b>' + S.nakshatra.name + '</b>',
+            'このパネルの二十七宿はこちら。上の伝統暦方式とは別のモデルで、値が一致しないほうが普通')
+    + '</ul></div></div>');
+
+  H.push('<p class="tsp">回転①から出た三つは、<em>同じ一つの数</em>を粗さの違う目盛りで切ったものです。'
+    + '三つが揃って何かを示しているのではありません。'
+    + '回転②の太陽基準の三つも同じで、朔からの位相という一つの数を三通りに言い換えたものです。</p>');
+
+  /* ---- (2) 噛み合いと、そのズレ ---- */
+  H.push('<div class="tsh">' + chip('計算') + '噛み合いと、そのズレ</div>');
+  H.push('<p class="tsp"><em>太陽の側は、補正なしで起点に還ります。</em>'
+    + '目盛りの幅が360°を割り切るからです。</p>');
+  H.push(T.sunCuts.map(function (c) {
+    return kv(c.name, '360 ÷ ' + c.step + '° = ' + c.count
+      + '<small> ' + (c.divides ? '割り切れる' : '割り切れない') + '</small>');
+  }).join(''));
+  H.push('<p class="tsp"><small class="tsnote">テストでの実測でも、50音歴は50区間の合計が次の冬至と'
+    + '誤差0.00秒で一致し、七十二候は一巡が次の立春に0.0秒で閉じます。</small></p>');
+
+  H.push('<p class="tsp"><em>月の側は、還りません。</em>'
+    + '朔の周期が太陽年を割り切らないからです。</p>');
+  H.push(kv('平均朔望月', MH.meanSynodic.toFixed(4) + '<small> 日</small>') +
+    kv('12朔望月', MH.twelveSynodic.toFixed(4) + '<small> 日</small>') +
+    kv('平均回帰年', MH.meanTropical.toFixed(4) + '<small> 日</small>') +
+    kv('1年あたりの不足', MH.yearGap.toFixed(4) + '<small> 日</small>') +
+    kv('19回帰年', MH.meton.solar.toFixed(2) + '<small> 日</small>') +
+    kv('235朔望月', MH.meton.lunar.toFixed(2) + '<small> 日</small>') +
+    kv('その差', MH.meton.diff.toFixed(3) + '<small> 日</small>') +
+    kv('19年に入る閏月', MH.meton.leaps + '<small> 回　235 − 19×12 = ' + MH.meton.leaps + '</small>'));
+  H.push('<p class="tsp"><em>旧暦だけが、この二つを噛み合わせています。</em>'
+    + '冬至を含む月を11月と決め、中気を含まない月を閏月にする。'
+    + 'そうやって噛み合わせきれなかった分が、<em>閏月</em>として現れます。</p>');
+  if (MH.leapNext) {
+    var ln = MH.leapNext;
+    H.push(kv(ln.current ? 'いま進行中の閏月' : '次の閏月',
+      '<b class="big">閏' + ln.month + '月</b><small> ' + jstStr(ln.startJd, false)
+      + ' 〜 ' + jstStr(CAL.jstDayToJd(CAL.jstDay(ln.endJd) - 1), false)
+      + '　' + ln.lengthDays + '日</small>') +
+      kv(ln.current ? 'この閏月の残り' : 'そこまで',
+        (ln.current ? Math.max(0, CAL.jstDay(ln.endJd) - CAL.jstDay(jd)) : ln.daysAway)
+        + '<small> 日</small>'));
+  } else {
+    H.push(kv('次の閏月', '<small>この先6周期には現れません</small>'));
+  }
+  H.push(kv('いまの周期の閏月', MH.leapInCycle ? '閏' + MH.leapInCycle + '月' : 'なし'));
+
+  /* ---- (3) いまこの瞬間の位置 ---- */
+  H.push('<div class="tsh">' + chip('計算') + 'いまこの瞬間の位置</div>');
+  H.push('<div class="tsband">'
+    + '<div' + (P.sun.band !== '中間' ? ' class="edge"' : '') + '><u>回転① 太陽（50音歴の区間）</u>'
+    + '<b>' + P.sun.band + '</b><s>' + (P.sun.progress * 100).toFixed(0) + '% 経過<br>'
+    + jstStr(P.sun.startJd) + ' 〜</s></div>'
+    + '<div' + (P.moon.band !== '中間' ? ' class="edge"' : '') + '><u>回転② 月（朔から次の朔）</u>'
+    + '<b>' + P.moon.band + '</b><s>' + (P.moon.progress * 100).toFixed(0) + '% 経過<br>月齢 '
+    + P.moon.age.toFixed(2) + ' / ' + P.moon.synodic.toFixed(2) + '日</s></div>'
+    + '</div>');
+  H.push(kv('太陽の年内位置（冬至起点）',
+    P.sun.yearBand + '<small> ' + (P.sun.yearProgress * 100).toFixed(1) + '% 経過</small>'));
+  if (P.bothNearBoundary) {
+    H.push('<div class="note">' + chip('仮説')
+      + '<b>いま、二つの回転がどちらも境目の近くにあります。</b>'
+      + 'ただしこの二つは<b>独立した周期</b>です。'
+      + '同じ日に境目が重なるのは<b>周期の合致であって、意味の合致ではありません</b>。'
+      + '片方の周期からもう片方の周期は決まりません。'
+      + 'ここから何かを読み取ることはしていませんし、良し悪しの判断にも使いません。</div>');
+  }
+
+  /* ---- (4) 生成順の注意 ---- */
+  H.push('<div class="tsh">' + chip('計算') + '生成順の注意 <i>常時表示</i></div>');
+  H.push('<div class="note"><b>独立していないものを、独立した根拠として重ねて数えないこと。</b><br>'
+    + '二十四節気・七十二候・50音歴を「三つが揃って示している」と読むと、'
+    + '<b>同じ一つの数を三回数えた</b>ことになります。'
+    + '月相・旧暦の日・二十七宿（伝統暦方式）も同じで、こちらは朔からの位相を三回数えることになります。<br><br>'
+    + '人物理解の側でも同じ問題を直しました。算命学の星は四柱推命の十神を別の名で呼んだものなので、'
+    + '独立した根拠としては扱っていません。</div>');
+
+  /* ---- 出さないと決めたもの ---- */
+  H.push('<div class="tsh">出さないと決めたもの <i>この節の外側</i></div>');
+  H.push(T.fudo.map(function (f) {
+    return '<div class="tsfudo"><u>' + chip('不能') + esc(f.what) + '</u>' + esc(f.why) + '</div>';
+  }).join(''));
+
+  document.getElementById('tsbody').innerHTML = H.join('');
 }
 
 /* 暦パネルの月相アイコン */

@@ -7,7 +7,8 @@ const files = [
   'test-calendar-1.js',   // 月・50音歴・二十四節気・旧暦・二十七宿
   'test-calendar-2.js',   // 閏月・連続性・キャッシュ整合・性能
   'test-kou.js',          // 七十二候
-  'test-reading.js'       // 四柱推命・算命学・宿曜・文面チェック
+  'test-reading.js',      // 四柱推命・算命学・宿曜・文面チェック
+  'test-truth.js'         // 真理構造から見る（導出の木・閏月・[不能]・禁止語）
 ];
 
 let bad = 0;

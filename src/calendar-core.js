@@ -445,7 +445,7 @@ function snapshot(jd) {
 }
 function resetCaches() {
   _gC = _kC = _lC = _nC = _koC = null;
-  _wsCache = {}; _cycleCache = {}; _zCache = {};
+  _wsCache = {}; _cycleCache = {}; _zCache = {}; _leapScan = {};
 }
 
 /* =====================================================================
@@ -516,6 +516,145 @@ function lunarDate(jd) {
     monthStartJd: cyc.ms[mi], nextMonthStartJd: cyc.ms[mi + 1],
     leapInCycle: cyc.leapIdx >= 0 ? cyc.nums[cyc.leapIdx] : null
   };
+}
+
+/* =====================================================================
+   次の閏月（前方走査・専用キャッシュつき）
+   -------------------------------------------------------------------
+   lunarCycle() は重いうえに 8 件でキャッシュ全消しになるため、
+   走査の結果は別のキャッシュに覚えておく。こうすると同じ周期を
+   二度計算しない。早送り中も、周期年をまたいだ最初の1回だけ働く。
+   ===================================================================== */
+var _leapScan = {};
+function cycleYearOf(jd) {                       // その日を含む旧暦周期の起点年
+  var day = jstDay(jd), y = jstParts(jd).y, cy = y - 1, cyc = lunarCycle(cy);
+  if (day >= jstDay(cyc.ms[cyc.n])) { cy = y; cyc = lunarCycle(cy); }
+  else if (day < jstDay(cyc.ms[0])) { cy = y - 2; cyc = lunarCycle(cy); }
+  if (day >= jstDay(cyc.ms[cyc.n])) cy = jstParts(cyc.ws).y + 1;
+  return cy;
+}
+function leapOfCycle(cy) {                       // その周期の閏月（無ければ null）
+  if (_leapScan[cy] !== undefined) return _leapScan[cy];
+  if (Object.keys(_leapScan).length > 40) _leapScan = {};
+  var c = lunarCycle(cy), r = null;
+  if (c.leapIdx >= 0) {
+    r = { cycleYear: cy, month: c.nums[c.leapIdx],
+          startJd: c.ms[c.leapIdx], endJd: c.ms[c.leapIdx + 1] };
+  }
+  return (_leapScan[cy] = r);
+}
+/* いま進行中か、これから最初に来る閏月。見つからなければ null。 */
+function nextLeapMonth(jd) {
+  var cy = cycleYearOf(jd), day = jstDay(jd);
+  for (var k = 0; k < 6; k++) {
+    var r = leapOfCycle(cy + k);
+    if (r && jstDay(r.endJd) > day) {
+      var p = jstParts(r.startJd);
+      return { month: r.month, startJd: r.startJd, endJd: r.endJd,
+               gregYear: p.y, gregMonth: p.m, gregDay: p.d,
+               lengthDays: jstDay(r.endJd) - jstDay(r.startJd),
+               daysAway: jstDay(r.startJd) - day,
+               current: jstDay(r.startJd) <= day };
+    }
+  }
+  return null;
+}
+
+/* =====================================================================
+   真理構造から見る（第8フェーズ）
+   -------------------------------------------------------------------
+   このパネルが出している六つの暦が、実は二つの回転しか見ていないこと、
+   そのうち太陽の側だけが補正なしで起点に還ることを、計算だけで示す層。
+
+   ここで出してよいのは「どの数がどこから出たか」と「割り切れるかどうか」
+   だけである。次のものは意図的に出さない（fudo に列挙する）:
+     ・50音歴の各音の意味・属性・対応表   ← 本人の領域。補完も解釈もしない
+     ・太陽＝火／月＝水 の割り当て        ← 本人の領域。出すのは計算上の非対称だけ
+     ・二十七宿から読む人物像・吉凶
+     ・五行と火水二元の対応づけ
+   吉凶・開運・「今日は〜に良い日」の類も書かない。
+   ===================================================================== */
+var MEAN_SYNODIC = 29.530588853;      // 平均朔望月（日）
+var MEAN_TROPICAL = 365.242190;       // 平均回帰年（日）
+
+function band(p) {                    // 周期のどこにいるか（3段）
+  if (p < 0.125) return '起点直後';
+  if (p > 0.875) return '終わり際';
+  return '中間';
+}
+function truthStructure(jd) {
+  var S = snapshot(jd);
+  var lam = S.sunLon, L = S.lunar, M = S.moon;
+  var synodic = M.nextNewJd - M.prevNewJd;       // この回の実測の朔望月
+
+  /* --- 回転①：太陽。同じ黄経を粗さの違う目盛りで切っているだけ --- */
+  var sunCuts = [
+    { name: '二十四節気', step: 15,  count: 24, no: S.sekki.index + 1, of: 24, value: S.sekki.name },
+    { name: '七十二候',   step: 5,   count: 72, no: S.kou.no,          of: 72, value: S.kou.kanji },
+    { name: '50音歴',     step: 7.2, count: 50, no: S.gojuon.no,       of: 50, value: S.gojuon.sound }
+  ];
+  sunCuts.forEach(function (c) {
+    c.divides = Math.abs(360 / c.step - c.count) < 1e-9;   // 360を割り切るか
+  });
+
+  /* --- 回転②：月。太陽を基準に測るか、恒星を基準に測るかで別の目盛りになる --- */
+  var moonSolar = [
+    { name: '月相',       from: 'そのまま角度で見る',   value: M.name },
+    { name: '旧暦の日',   from: '日で数える',           value: (L.leap ? '閏' : '') + L.month + '月' + L.day + '日' },
+    { name: '二十七宿',   from: '旧暦の日から数える',   value: null,
+      note: '（朔日宿＋旧暦日−1）mod 27。伝統暦方式。人物理解で使っている方式' }
+  ];
+  var moonSidereal = {
+    name: '二十七宿', from: '恒星を基準にした月の黄経を13.33°ごとに切る',
+    value: S.nakshatra.name, sidLon: S.nakshatra.sidLon,
+    note: 'このパネルの二十七宿はこちら（天文方式）。上の伝統暦方式とは別のモデル'
+  };
+
+  /* --- 噛み合いとズレ（すべて算術） --- */
+  var twelve = 12 * MEAN_SYNODIC;
+  var meton = { solar: 19 * MEAN_TROPICAL, lunar: 235 * MEAN_SYNODIC };
+  meton.diff = meton.lunar - meton.solar;
+  meton.leaps = 235 - 19 * 12;
+  var mesh = {
+    sunReturns: sunCuts.every(function (c) { return c.divides; }),
+    synodic: synodic, meanSynodic: MEAN_SYNODIC, meanTropical: MEAN_TROPICAL,
+    twelveSynodic: twelve, yearGap: MEAN_TROPICAL - twelve, meton: meton,
+    leapNext: nextLeapMonth(jd), leapInCycle: L.leapInCycle
+  };
+
+  /* --- いまこの瞬間の位置 --- */
+  var sunProg = S.gojuon.progress;                       // 太陽側で最も細かい目盛り
+  var yearProg = norm360(lam - 270) / 360;               // 冬至起点の年内位置
+  var moonProg = M.age / synodic;
+  var pos = {
+    sun: { band: band(sunProg), progress: sunProg,
+           unit: '50音歴の区間', startJd: S.gojuon.startJd, endJd: S.gojuon.endJd,
+           yearBand: band(yearProg), yearProgress: yearProg },
+    moon: { band: band(moonProg), progress: moonProg,
+            unit: '朔望（朔から次の朔まで）', age: M.age, synodic: synodic,
+            prevNewJd: M.prevNewJd, nextNewJd: M.nextNewJd },
+    bothNearBoundary: band(sunProg) !== '中間' && band(moonProg) !== '中間'
+  };
+
+  /* --- 出さないと決めたもの --- */
+  var fudo = [
+    { what: '50音歴の各音の意味・属性・対応表',
+      why: '音と日付・区間だけを出す設計にしている。意味づけはこのアプリの領域ではない。'
+         + '推測で補うと、無いものを在るかのように出すことになる。' },
+    { what: '太陽＝火／月＝水 のような割り当て',
+      why: 'ここで出せるのは「どちらが補正を要するか」という計算上の非対称だけ。'
+         + 'どちらをどう呼ぶかは、この計算からは決まらない。' },
+    { what: '二十七宿から読む人物像・吉凶・相性',
+      why: '宿から性格や吉凶を出す記述は流派によって大きく異なり、確信をもって固定できないため。'
+         + '宿は暦の上の位置としてだけ出している。' },
+    { what: '五行と火水二元の対応づけ',
+      why: '五行は四柱推命というモデルの内側の記号で、同じ字を使う別の体系とは切り離して扱っている。'
+         + '対応表を作らない。' }
+  ];
+
+  return { jd: jd, sunLon: lam, elongation: M.elongation, moonAge: M.age,
+           sunCuts: sunCuts, moonSolar: moonSolar, moonSidereal: moonSidereal,
+           mesh: mesh, pos: pos, fudo: fudo };
 }
 
 /* =====================================================================
@@ -615,6 +754,8 @@ return {
   KOU: KOU, KOU_POS: KOU_POS, kouAt: kouAt,
   zassetsuOfYear: zassetsuOfYear,
   lunarDate: lunarDate, lunarCycle: lunarCycle, moonPhase: moonPhase,
+  nextLeapMonth: nextLeapMonth, cycleYearOf: cycleYearOf, truthStructure: truthStructure,
+  MEAN_SYNODIC: MEAN_SYNODIC, MEAN_TROPICAL: MEAN_TROPICAL,
   snapshot: snapshot, resetCaches: resetCaches,
   NAKSHATRA: NAKSHATRA, NAKSHATRA_CONFIG: NAKSHATRA_CONFIG,
   ayanamshaDeg: ayanamshaDeg, nakshatra: nakshatra
