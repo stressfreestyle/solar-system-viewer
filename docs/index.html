@@ -25,7 +25,9 @@ html,body{width:100%;height:100%;overflow:hidden;background:#05060c;
 
 /* セーフエリア。standalone 起動だとステータスバーとホームインジケータの
    下に潜り込むので、上下だけでなく横（横向き時のノッチ側）も見る。 */
+/* パネル内の文字倍率。0.8〜2.0。星図とHUDには効かせない。 */
 :root{
+  --tscale:1;
   --sat:env(safe-area-inset-top,0px);
   --sab:env(safe-area-inset-bottom,0px);
   --sal:env(safe-area-inset-left,0px);
@@ -96,18 +98,18 @@ html,body{width:100%;height:100%;overflow:hidden;background:#05060c;
 #grip{width:38px;height:4px;border-radius:2px;background:rgba(255,255,255,.26);margin:4px auto 12px}
 #shead{display:flex;align-items:center;gap:12px;margin-bottom:14px}
 #swatch{width:46px;height:46px;flex:none;border-radius:50%;box-shadow:0 2px 14px rgba(0,0,0,.6)}
-#sname{font-size:20px;font-weight:700;letter-spacing:.02em}
-#sen{font-size:11px;color:#8c9ab5;letter-spacing:.09em;text-transform:uppercase;margin-top:2px}
+#sname{font-size:calc(20px * var(--tscale));font-weight:700;letter-spacing:.02em}
+#sen{font-size:calc(11px * var(--tscale));color:#8c9ab5;letter-spacing:.09em;text-transform:uppercase;margin-top:2px}
 #sclose{margin-left:auto;border:0;background:rgba(255,255,255,.09);color:#c8d3e8;
   width:34px;height:34px;border-radius:50%;font-size:19px;line-height:1;cursor:pointer}
 .facts{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:14px}
 .fact{background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.07);
   border-radius:11px;padding:9px 11px}
-.fact b{display:block;font-size:9.5px;font-weight:600;color:#8896b1;letter-spacing:.05em;margin-bottom:3px}
-.fact i{font-style:normal;font-size:14px;font-weight:650;font-variant-numeric:tabular-nums;letter-spacing:.01em}
-.fact i small{font-size:10.5px;font-weight:500;color:#93a2bd;margin-left:2px}
-#sdesc{font-size:12.5px;line-height:1.72;color:#b9c5dc}
-#snote{margin-top:11px;font-size:10px;line-height:1.55;color:#6d7b96}
+.fact b{display:block;font-size:calc(9.5px * var(--tscale));font-weight:600;color:#8896b1;letter-spacing:.05em;margin-bottom:3px}
+.fact i{font-style:normal;font-size:calc(14px * var(--tscale));font-weight:650;font-variant-numeric:tabular-nums;letter-spacing:.01em}
+.fact i small{font-size:calc(10.5px * var(--tscale));font-weight:500;color:#93a2bd;margin-left:2px}
+#sdesc{font-size:calc(12.5px * var(--tscale));line-height:1.72;color:#b9c5dc}
+#snote{margin-top:11px;font-size:calc(10px * var(--tscale));line-height:1.55;color:#6d7b96}
 
 /* ---- 暦シート ---- */
 #cal{position:fixed;left:0;right:0;bottom:0;z-index:11;transform:translateY(105%);
@@ -119,8 +121,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:#05060c;
 #cal.open{transform:translateY(0)}
 #calhead{display:flex;align-items:center;gap:10px;flex:none;
   padding:2px calc(var(--sar) + 18px) 10px calc(var(--sal) + 18px)}
-#caltitle{font-size:16px;font-weight:700}
-#caldate{font-size:11px;color:#8c9ab5;margin-top:1px;font-variant-numeric:tabular-nums}
+#caltitle{font-size:calc(16px * var(--tscale));font-weight:700}
+#caldate{font-size:calc(11px * var(--tscale));color:#8c9ab5;margin-top:1px;font-variant-numeric:tabular-nums}
 #calclose{margin-left:auto;border:0;background:rgba(255,255,255,.09);color:#c8d3e8;
   width:34px;height:34px;border-radius:50%;font-size:19px;line-height:1;cursor:pointer;flex:none}
 #calbody{overflow-y:auto;-webkit-overflow-scrolling:touch;
@@ -130,42 +132,42 @@ html,body{width:100%;height:100%;overflow:hidden;background:#05060c;
 #g50{background:linear-gradient(140deg,rgba(58,99,200,.30),rgba(120,70,190,.20));
   border:1px solid rgba(150,180,255,.28);border-radius:16px;padding:14px 16px;margin-bottom:14px}
 #g50top{display:flex;align-items:center;gap:14px}
-#g50char{font-size:52px;font-weight:700;line-height:.98;letter-spacing:0;
-  color:#fff;text-shadow:0 2px 18px rgba(120,160,255,.55);min-width:62px;text-align:center}
+#g50char{font-size:calc(52px * var(--tscale));font-weight:700;line-height:.98;letter-spacing:0;
+  color:#fff;text-shadow:0 2px 18px rgba(120,160,255,.55);min-width:calc(62px * var(--tscale));text-align:center}
 #g50meta{flex:1;min-width:0}
-#g50no{font-size:10.5px;color:#a9bde8;letter-spacing:.06em;font-weight:600}
-#g50rng{font-size:11px;color:#cfdcf5;margin-top:4px;line-height:1.5;font-variant-numeric:tabular-nums}
+#g50no{font-size:calc(10.5px * var(--tscale));color:#a9bde8;letter-spacing:.06em;font-weight:600}
+#g50rng{font-size:calc(11px * var(--tscale));color:#cfdcf5;margin-top:4px;line-height:1.5;font-variant-numeric:tabular-nums}
 #g50bar{height:5px;border-radius:3px;background:rgba(255,255,255,.15);margin-top:9px;overflow:hidden}
 #g50fill{height:100%;background:linear-gradient(90deg,#7ea6ff,#b98cff);border-radius:3px}
-#g50sub{display:flex;justify-content:space-between;font-size:10.5px;color:#a9bde8;margin-top:6px;
+#g50sub{display:flex;justify-content:space-between;font-size:calc(10.5px * var(--tscale));color:#a9bde8;margin-top:6px;
   font-variant-numeric:tabular-nums}
-#g50note{margin-top:10px;font-size:9.5px;color:#8093b8;line-height:1.5}
+#g50note{margin-top:10px;font-size:calc(9.5px * var(--tscale));color:#8093b8;line-height:1.5}
 
 /* セクション */
 details.sec{border:1px solid rgba(255,255,255,.09);border-radius:13px;margin-bottom:9px;
   background:rgba(255,255,255,.035);overflow:hidden}
-details.sec>summary{list-style:none;cursor:pointer;padding:12px 14px;font-size:13px;font-weight:700;
+details.sec>summary{list-style:none;cursor:pointer;padding:12px 14px;font-size:calc(13px * var(--tscale));font-weight:700;
   display:flex;align-items:center;gap:8px;color:#dbe4f5}
 details.sec>summary::-webkit-details-marker{display:none}
 details.sec>summary::after{content:'▾';margin-left:auto;color:#7b8aa8;font-size:11px;transition:transform .2s}
 details.sec[open]>summary::after{transform:rotate(180deg)}
-details.sec>summary em{font-style:normal;font-weight:600;font-size:11px;color:#94a5c4;margin-left:2px}
+details.sec>summary em{font-style:normal;font-weight:600;font-size:calc(11px * var(--tscale));color:#94a5c4;margin-left:2px}
 .secbody{padding:0 14px 13px}
-.kv{display:flex;justify-content:space-between;gap:10px;padding:6px 0;font-size:12.5px;
+.kv{display:flex;justify-content:space-between;gap:10px;padding:6px 0;font-size:calc(12.5px * var(--tscale));
   border-top:1px solid rgba(255,255,255,.055)}
 .kv:first-child{border-top:0}
 .kv span{color:#93a2bd;flex:none}
 .kv b{font-weight:650;text-align:right;font-variant-numeric:tabular-nums}
-.kv b small{font-weight:500;color:#93a2bd;font-size:10.5px}
+.kv b small{font-weight:500;color:#93a2bd;font-size:calc(10.5px * var(--tscale))}
 .note{margin-top:9px;padding:9px 11px;border-radius:9px;background:rgba(255,190,90,.09);
-  border:1px solid rgba(255,190,90,.24);font-size:10px;line-height:1.6;color:#e6cfa4}
+  border:1px solid rgba(255,190,90,.24);font-size:calc(10px * var(--tscale));line-height:1.6;color:#e6cfa4}
 .note b{color:#ffd89a}
 #moonrow{display:flex;align-items:center;gap:14px;padding:4px 0 10px}
 #mooncv{flex:none;border-radius:50%;background:#05060c}
 #moonrow div{flex:1;min-width:0}
 .tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
 .tag{background:rgba(120,180,255,.16);border:1px solid rgba(120,180,255,.3);color:#bcd6ff;
-  border-radius:7px;padding:3px 8px;font-size:10.5px;font-weight:600}
+  border-radius:7px;padding:3px 8px;font-size:calc(10.5px * var(--tscale));font-weight:600}
 
 /* ---- 誕生日パネル / 読みシート 共通 ---- */
 .xbtn{margin-left:auto;border:0;background:rgba(255,255,255,.09);color:#c8d3e8;
@@ -178,59 +180,59 @@ details.sec>summary em{font-style:normal;font-weight:600;font-size:11px;color:#9
 #birth.open,#read.open{transform:translateY(0)}
 .bhead,#readhead{display:flex;align-items:center;gap:10px;flex:none;
   padding:16px calc(var(--sar) + 18px) 10px calc(var(--sal) + 18px)}
-.btitle,#readtitle{font-size:16px;font-weight:700}
-.bsub,#readsub{font-size:11px;color:#8c9ab5;margin-top:2px}
+.btitle,#readtitle{font-size:calc(16px * var(--tscale));font-weight:700}
+.bsub,#readsub{font-size:calc(11px * var(--tscale));color:#8c9ab5;margin-top:2px}
 .bbody{overflow-y:auto;-webkit-overflow-scrolling:touch;
   padding:0 calc(var(--sar) + 18px) calc(var(--sab) + 22px) calc(var(--sal) + 18px)}
-.bl{display:block;font-size:11px;font-weight:600;color:#9fb0cd;margin:12px 0 5px;letter-spacing:.03em}
-.req{background:#3a63c8;color:#fff;border-radius:5px;padding:1px 5px;font-size:9px;margin-left:4px}
-.opt{background:rgba(255,255,255,.1);color:#93a2bd;border-radius:5px;padding:1px 5px;font-size:9px;margin-left:4px}
+.bl{display:block;font-size:calc(11px * var(--tscale));font-weight:600;color:#9fb0cd;margin:12px 0 5px;letter-spacing:.03em}
+.req{background:#3a63c8;color:#fff;border-radius:5px;padding:1px 5px;font-size:calc(9px * var(--tscale));margin-left:4px}
+.opt{background:rgba(255,255,255,.1);color:#93a2bd;border-radius:5px;padding:1px 5px;font-size:calc(9px * var(--tscale));margin-left:4px}
 #birth input[type=date],#birth input[type=text],#birth textarea{
   width:100%;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);
-  border-radius:10px;color:#e6edfa;font-weight:500;font-size:16px;line-height:1.4;font-family:inherit;padding:14px 12px;min-height:52px;
+  border-radius:10px;color:#e6edfa;font-weight:500;font-size:calc(16px * var(--tscale));line-height:1.4;font-family:inherit;padding:14px 12px;min-height:calc(52px * var(--tscale));
   -webkit-appearance:none;appearance:none}
-#birth textarea{resize:vertical;font-size:14px;min-height:0}
+#birth textarea{resize:vertical;font-size:calc(14px * var(--tscale));min-height:0}
 
 /* 出生時刻の 時:分 セレクタ。
    モーダルのピッカーを出さず、選んだ値がその場に見えたままになる形にしている。
    フォントは16px（iOS でフォーカス時にページが拡大されるのを防ぐため）。 */
 .trow{display:flex;align-items:center;gap:9px}
-.tsep{flex:none;font-size:18px;font-weight:700;color:#8c9ab5}
+.tsep{flex:none;font-size:calc(18px * var(--tscale));font-weight:700;color:#8c9ab5}
 .sel{position:relative;flex:1;min-width:0;display:block}
 .sel::after{content:'';position:absolute;right:14px;top:50%;width:8px;height:8px;
   border-right:2px solid #9fb0cd;border-bottom:2px solid #9fb0cd;
   transform:translateY(-72%) rotate(45deg);pointer-events:none}
-.sel select{width:100%;height:54px;background:rgba(255,255,255,.07);
+.sel select{width:100%;height:calc(54px * var(--tscale));background:rgba(255,255,255,.07);
   border:1px solid rgba(255,255,255,.14);border-radius:10px;color:#e6edfa;
-  font-weight:600;font-size:16px;line-height:1.2;font-family:inherit;padding:0 34px 0 14px;cursor:pointer;
+  font-weight:600;font-size:calc(16px * var(--tscale));line-height:1.2;font-family:inherit;padding:0 34px 0 14px;cursor:pointer;
   -webkit-appearance:none;appearance:none}
 .sel select:focus{outline:none;border-color:#5f85e0;background:rgba(90,120,200,.16)}
 .sel select option{background:#141a2c;color:#e6edfa}
-.tstat{margin-top:9px;font-size:12.5px;font-weight:600;color:#a8c4f0;
+.tstat{margin-top:9px;font-size:calc(12.5px * var(--tscale));font-weight:600;color:#a8c4f0;
   background:rgba(90,130,220,.12);border:1px solid rgba(120,160,240,.24);
   border-radius:9px;padding:9px 11px;line-height:1.5}
 .tstat.none{color:#93a2bd;background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.1)}
 .tstat.warn{color:#ffd89a;background:rgba(255,190,90,.12);border-color:rgba(255,190,90,.4)}
-.bnote{font-size:10px;line-height:1.6;color:#7d8ca8;margin-top:6px}
-.bchk{display:flex;align-items:flex-start;gap:8px;margin-top:16px;font-size:12px;color:#c3cee1;line-height:1.5}
+.bnote{font-size:calc(10px * var(--tscale));line-height:1.6;color:#7d8ca8;margin-top:6px}
+.bchk{display:flex;align-items:flex-start;gap:8px;margin-top:16px;font-size:calc(12px * var(--tscale));color:#c3cee1;line-height:1.5}
 .bchk input{width:20px;height:20px;flex:none;accent-color:#3a63c8;margin-top:1px}
 .brow{display:flex;gap:9px;margin-top:16px}
-.bgo,.bsec{flex:1;border:0;border-radius:12px;padding:14px 8px;font-weight:700;font-size:13.5px;line-height:1;font-family:inherit;cursor:pointer}
+.bgo,.bsec{flex:1;border:0;border-radius:12px;padding:14px 8px;font-weight:700;font-size:calc(13.5px * var(--tscale));line-height:1;font-family:inherit;cursor:pointer}
 .bgo{background:#3a63c8;color:#fff}
 .bsec{background:rgba(255,255,255,.09);color:#dbe4f5;border:1px solid rgba(255,255,255,.15)}
 .bgo:active,.bsec:active{opacity:.75}
 .bdel{width:100%;margin-top:10px;border:1px solid rgba(255,120,120,.3);background:rgba(255,90,90,.09);
-  color:#f0a8a8;border-radius:11px;padding:11px;font-weight:600;font-size:12px;line-height:1;font-family:inherit;cursor:pointer}
+  color:#f0a8a8;border-radius:11px;padding:11px;font-weight:600;font-size:calc(12px * var(--tscale));line-height:1;font-family:inherit;cursor:pointer}
 
 /* ---- 読みシート ---- */
 #readbody{overflow-y:auto;-webkit-overflow-scrolling:touch;
   padding:0 calc(var(--sar) + 18px) calc(var(--sab) + 26px) calc(var(--sal) + 18px)}
 .rsec{margin-bottom:20px}
-.rsec>h3{font-size:13.5px;font-weight:700;color:#dbe4f5;margin-bottom:9px;
+.rsec>h3{font-size:calc(13.5px * var(--tscale));font-weight:700;color:#dbe4f5;margin-bottom:9px;
   padding-bottom:7px;border-bottom:1px solid rgba(255,255,255,.1);
   display:flex;align-items:baseline;gap:7px}
-.rsec>h3 span{font-size:10px;font-weight:600;color:#7d8ca8}
-.chip{display:inline-block;border-radius:5px;padding:1.5px 6px;font-size:9.5px;font-weight:700;
+.rsec>h3 span{font-size:calc(10px * var(--tscale));font-weight:600;color:#7d8ca8}
+.chip{display:inline-block;border-radius:5px;padding:1.5px 6px;font-size:calc(9.5px * var(--tscale));font-weight:700;
   letter-spacing:.04em;vertical-align:1.5px;margin-right:5px;white-space:nowrap}
 .c計算{background:rgba(90,190,150,.2);color:#8fe3bd;border:1px solid rgba(90,190,150,.42)}
 .c伝統{background:rgba(190,160,90,.2);color:#e8cf9a;border:1px solid rgba(190,160,90,.42)}
@@ -240,36 +242,54 @@ details.sec>summary em{font-style:normal;font-weight:600;font-size:11px;color:#9
 .c不能{background:rgba(150,150,165,.18);color:#bcc2d0;border:1px solid rgba(150,150,165,.4)}
 .rlead{background:linear-gradient(140deg,rgba(58,99,200,.26),rgba(120,70,190,.18));
   border:1px solid rgba(150,180,255,.26);border-radius:14px;padding:13px 15px;margin-bottom:8px}
-.rlead b{display:block;font-size:13.5px;margin-bottom:5px;color:#e9f0ff}
-.rlead p{font-size:11.5px;line-height:1.7;color:#c2cfe6}
-.rrow{display:flex;gap:10px;padding:7px 0;font-size:12px;border-top:1px solid rgba(255,255,255,.055);line-height:1.6}
+.rlead b{display:block;font-size:calc(13.5px * var(--tscale));margin-bottom:5px;color:#e9f0ff}
+.rlead p{font-size:calc(11.5px * var(--tscale));line-height:1.7;color:#c2cfe6}
+.rrow{display:flex;gap:10px;padding:7px 0;font-size:calc(12px * var(--tscale));border-top:1px solid rgba(255,255,255,.055);line-height:1.6}
 .rrow:first-child{border-top:0}
 .rrow>i{font-style:normal;color:#93a2bd;flex:0 0 34%;min-width:0}
 .rrow>b{font-weight:600;flex:1;min-width:0;word-break:break-word}
 .pill{display:flex;gap:6px;overflow-x:auto;padding:4px 0 8px;-webkit-overflow-scrolling:touch}
 .pill>div{flex:none;background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.09);
-  border-radius:11px;padding:9px 12px;text-align:center;min-width:70px}
-.pill>div u{display:block;text-decoration:none;font-size:9.5px;color:#8896b1;margin-bottom:4px}
-.pill>div s{display:block;text-decoration:none;font-size:19px;font-weight:700;letter-spacing:.06em}
-.pill>div em{display:block;font-style:normal;font-size:9px;color:#8896b1;margin-top:4px;line-height:1.45}
+  border-radius:11px;padding:9px 12px;text-align:center;min-width:calc(70px * var(--tscale))}
+.pill>div u{display:block;text-decoration:none;font-size:calc(9.5px * var(--tscale));color:#8896b1;margin-bottom:4px}
+.pill>div s{display:block;text-decoration:none;font-size:calc(19px * var(--tscale));font-weight:700;letter-spacing:.06em}
+.pill>div em{display:block;font-style:normal;font-size:calc(9px * var(--tscale));color:#8896b1;margin-top:4px;line-height:1.45}
 .hyp{border:1px solid rgba(255,255,255,.1);border-radius:13px;padding:13px 14px;margin-bottom:11px;
   background:rgba(255,255,255,.035)}
-.hyp>h4{font-size:13px;font-weight:700;margin-bottom:8px;line-height:1.5}
-.hyp .f{font-size:11.5px;line-height:1.7;margin-bottom:7px;color:#c2cfe6}
-.hyp .f u{display:block;text-decoration:none;font-size:9.5px;font-weight:700;color:#8896b1;
+.hyp>h4{font-size:calc(13px * var(--tscale));font-weight:700;margin-bottom:8px;line-height:1.5}
+.hyp .f{font-size:calc(11.5px * var(--tscale));line-height:1.7;margin-bottom:7px;color:#c2cfe6}
+.hyp .f u{display:block;text-decoration:none;font-size:calc(9.5px * var(--tscale));font-weight:700;color:#8896b1;
   letter-spacing:.05em;margin-bottom:2px}
 .hyp .q{background:rgba(120,160,240,.1);border-left:2px solid rgba(120,160,240,.5);
   border-radius:0 7px 7px 0;padding:8px 10px;margin:8px 0}
 .stat{display:flex;gap:5px;margin-top:10px;flex-wrap:wrap}
-.stat button{flex:1;min-width:64px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.05);
-  color:#9fb0cd;border-radius:8px;padding:8px 4px;font-weight:600;font-size:10.5px;line-height:1;font-family:inherit;cursor:pointer}
+.stat button{flex:1;min-width:calc(64px * var(--tscale));border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.05);
+  color:#9fb0cd;border-radius:8px;padding:8px 4px;font-weight:600;font-size:calc(10.5px * var(--tscale));line-height:1;font-family:inherit;cursor:pointer}
 .stat button.on{background:#3a63c8;border-color:#5f85e0;color:#fff}
 .stat button.on[data-s=onthisface]{background:#2f7a4a;border-color:#4a9a68}
 .stat button.on[data-s=otherface]{background:#8a5a2a;border-color:#b07c3c}
 .stat button.on[data-s=unclear]{background:#4a5570;border-color:#6b7796}
 .warn{background:rgba(255,190,90,.09);border:1px solid rgba(255,190,90,.24);
-  border-radius:10px;padding:11px 13px;font-size:10.5px;line-height:1.7;color:#e6cfa4;margin-bottom:14px}
+  border-radius:10px;padding:11px 13px;font-size:calc(10.5px * var(--tscale));line-height:1.7;color:#e6cfa4;margin-bottom:14px}
 .warn b{color:#ffd89a}
+
+/* JS が組み立てる本文の共通クラス（インライン style をやめてここへ集約し、
+   倍率の取りこぼしが起きないようにしている） */
+.big{font-size:calc(15px * var(--tscale))}
+.sub{display:block;font-size:calc(10px * var(--tscale));color:#8896b1;line-height:1.55;margin-top:2px}
+.subq{display:block;font-size:calc(10px * var(--tscale));color:#9db4dd;line-height:1.55;margin-top:2px}
+.lead{font-size:calc(10.5px * var(--tscale));color:#8896b1;line-height:1.7;margin-bottom:9px}
+.lead.mt{margin-top:8px;margin-bottom:0}
+/* 長い語や数値でも横に溢れさせない */
+.fact i,.kv b,.rrow b,.hyp .f,.rlead p{overflow-wrap:anywhere;word-break:break-word}
+
+/* 文字サイズの操作（パネルのヘッダに入る。ここ自体は拡大しない） */
+.tz{display:flex;align-items:center;gap:3px;flex:none;margin-left:auto}
+.tz button{border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.06);
+  color:#cfdcf5;border-radius:9px;min-width:34px;height:34px;padding:0 7px;
+  font-weight:700;font-size:12.5px;line-height:1;font-family:inherit;cursor:pointer}
+.tz button:active{background:rgba(90,120,200,.4)}
+.tz button.tzv{min-width:46px;font-size:11px;color:#93a2bd;font-variant-numeric:tabular-nums}
 </style>
 </head>
 <body>
@@ -289,7 +309,7 @@ details.sec>summary em{font-style:normal;font-weight:600;font-size:11px;color:#9
 </div>
 
 <div id="birth">
-  <div class="bhead">
+  <div class="bhead" id="bhead">
     <div><div class="btitle">生年月日から見る</div>
       <div class="bsub">その瞬間の惑星配置に移動します</div></div>
     <button class="xbtn" id="birthClose">&times;</button>
@@ -3391,7 +3411,7 @@ function updateCal(force) {
   // ---- 七十二候 ----
   var KO = S.kou;
   document.getElementById('koubody').innerHTML =
-    kv('現在の候', '<b style="font-size:15px">' + KO.kanji + '</b>') +
+    kv('現在の候', '<b class="big">' + KO.kanji + '</b>') +
     kv('読み', KO.yomi) +
     kv('意味', KO.imi) +
     kv('第何候', KO.no + ' / 72') +
@@ -3407,7 +3427,7 @@ function updateCal(force) {
     ? '<div class="tags">' + S.zassetsu.map(function (z) { return '<span class="tag">' + z + '</span>'; }).join('') + '</div>'
     : '';
   document.getElementById('sekkibody').innerHTML =
-    kv('現在の節気', '<b style="font-size:15px">' + K.name + '</b>') +
+    kv('現在の節気', '<b class="big">' + K.name + '</b>') +
     kv('入った日時', jstStr(K.jd)) +
     kv('次の節気', K.nextName + ' <small>' + jstStr(K.nextJd) + '</small>') +
     kv('太陽黄経', S.sunLon.toFixed(3) + '<small> °</small>') + zt;
@@ -3415,7 +3435,7 @@ function updateCal(force) {
   // ---- 旧暦 ----
   var L = S.lunar;
   document.getElementById('lunarbody').innerHTML =
-    kv('旧暦', '<b style="font-size:15px">' + (L.leap ? '閏' : '') + L.month + '月 ' + L.day + '日</b>') +
+    kv('旧暦', '<b class="big">' + (L.leap ? '閏' : '') + L.month + '月 ' + L.day + '日</b>') +
     kv('年', L.year + '<small> 年</small>') +
     kv('月の大小', (L.big ? '大の月' : '小の月') + '<small> ' + L.monthLength + '日</small>') +
     kv('朔 (1日)', jstStr(L.monthStartJd)) +
@@ -3425,7 +3445,7 @@ function updateCal(force) {
   // ---- 二十七宿 ----
   var N = S.nakshatra;
   document.getElementById('nakbody').innerHTML =
-    kv('宿', '<b style="font-size:15px">' + N.name + '</b> <small>' + N.sanskrit + '</small>') +
+    kv('宿', '<b class="big">' + N.name + '</b> <small>' + N.sanskrit + '</small>') +
     kv('番号', N.no + ' / 27') +
     kv('入宿', jstStr(N.enterJd)) +
     kv('出宿', jstStr(N.leaveJd)) +
@@ -3584,6 +3604,84 @@ document.getElementById('bNow').addEventListener('click', function () {
   pinnedMs = null; pinnedHasTime = false; offsetMs = 0; simMs = Date.now();     // 誕生時ロックも解除
   slider.value = 0; applySpeed();
 });
+
+/* =====================================================================
+   11a. パネル内の文字倍率
+   -------------------------------------------------------------------
+   ブラウザ標準のピンチズームは使わない。この画面は全面 position:fixed +
+   overflow:hidden なので、ページ全体が拡大すると端が見えなくなって
+   元に戻せなくなるうえ、星図のピンチ（惑星ズーム）と衝突するため。
+   代わりに CSS 変数 --tscale をパネル内の font-size に掛ける。
+   星図・上部HUD・下部コントロールには効かせない（固定レイアウトなので）。
+
+   ・パネル内で2本指ピンチ → 倍率変更（0.8〜2.0で頭打ち）
+   ・1本指はそのまま素通し → 今までどおりスクロールできる
+   ・倍率は localStorage に常時保存する。生年月日の保存オプトインとは
+     別のキーで、表示設定なので「保存された入力を削除」の対象にもしない
+   =================================================================== */
+var TS_KEY = 'solar.tscale.v1', TS_MIN = 0.8, TS_MAX = 2.0;
+var tscale = 1;
+(function loadTscale() {
+  try {
+    var v = parseFloat(localStorage.getItem(TS_KEY));
+    if (v >= TS_MIN && v <= TS_MAX) tscale = v;
+  } catch (e) {}
+})();
+function setTscale(v, save) {
+  v = Math.max(TS_MIN, Math.min(TS_MAX, v));
+  tscale = v;
+  document.documentElement.style.setProperty('--tscale', String(v));
+  var t = document.querySelectorAll('.tzv');
+  for (var i = 0; i < t.length; i++) t[i].textContent = Math.round(v * 100) + '%';
+  if (save) { try { localStorage.setItem(TS_KEY, String(v)); } catch (e) {} }
+}
+
+/* 各パネルのヘッダに A− / 倍率 / A＋ を差し込む（倍率表示のタップで等倍に戻す） */
+function buildTextZoomUI() {
+  var heads = ['shead', 'calhead', 'bhead', 'readhead'];
+  for (var i = 0; i < heads.length; i++) {
+    var h = document.getElementById(heads[i]);
+    if (!h || h.querySelector('.tz')) continue;
+    var box = document.createElement('span');
+    box.className = 'tz';
+    box.innerHTML = '<button data-t="-" aria-label="文字を小さく">A−</button>'
+                  + '<button class="tzv" data-t="0" aria-label="文字の大きさを等倍に戻す">100%</button>'
+                  + '<button data-t="+" aria-label="文字を大きく">A＋</button>';
+    var close = h.querySelector('button');          // 閉じるボタンの手前に置く
+    h.insertBefore(box, close);
+  }
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest ? e.target.closest('.tz button') : null;
+    if (!b) return;
+    var d = b.getAttribute('data-t');
+    if (d === '0') setTscale(1, true);
+    else setTscale(tscale + (d === '+' ? 0.1 : -0.1), true);
+  });
+}
+
+/* パネル内の2本指ピンチ。1本指のときは何もしない（スクロールを殺さない）。 */
+function attachTextPinch(el) {
+  if (!el) return;
+  var d0 = 0, s0 = 1, active = false;
+  function dist(t) {
+    return Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+  }
+  el.addEventListener('touchstart', function (e) {
+    if (e.touches.length === 2) { active = true; d0 = dist(e.touches); s0 = tscale; }
+  }, { passive: true });
+  el.addEventListener('touchmove', function (e) {
+    if (e.touches.length !== 2) return;             // 1本指は素通し＝スクロールが効く
+    if (!active) { active = true; d0 = dist(e.touches); s0 = tscale; return; }
+    e.preventDefault();                             // 2本指のときだけ横取りする
+    var d = dist(e.touches);
+    if (d0 > 0) setTscale(s0 * d / d0, false);
+  }, { passive: false });
+  function end(e) {
+    if (active && (!e.touches || e.touches.length < 2)) { active = false; setTscale(tscale, true); }
+  }
+  el.addEventListener('touchend', end, { passive: true });
+  el.addEventListener('touchcancel', end, { passive: true });
+}
 
 /* =====================================================================
    11b. 誕生日パネル
@@ -3783,7 +3881,7 @@ function showReading(inp) {
     H.push('<div class="rlead"><b>' + (i + 1) + '. ' + esc(t.theme) + '</b>'
       + '<p>' + chip('仮説') + esc(t.reality_check) + '</p></div>');
   });
-  H.push('<p style="font-size:10.5px;color:#8896b1;line-height:1.7;margin-top:8px">'
+  H.push('<p class="lead mt">'
     + 'この3つは、下の構造から機械的に選んだ「確かめる順番の候補」です。'
     + 'あなたにとって重要な順ではありません。</p></div>');
 
@@ -3792,7 +3890,7 @@ function showReading(inp) {
   H.push(row('生年月日', esc(inp.y + '-' + pad(inp.m) + '-' + pad(inp.d))));
   H.push(row('出生時刻', inp.hasTime ? esc(pad(inp.hh) + ':' + pad(inp.mi)) : '不明（省略した計算あり）'));
   H.push(row('出生地', inp.place ? esc(inp.place) : '不明'));
-  H.push(row('呼称・性別など', inp.gender ? esc(inp.gender) + '<br><span style="font-size:10px;color:#8896b1">呼称と、本人が確認する文脈の質問にのみ使用。性格・能力・役割・運勢の算出には使っていません。</span>' : '未入力'));
+  H.push(row('呼称・性別など', inp.gender ? esc(inp.gender) + '<br><span class="sub">呼称と、本人が確認する文脈の質問にのみ使用。性格・能力・役割・運勢の算出には使っていません。</span>' : '未入力'));
   R.conventions.forEach(function (c) { H.push(row(c[0], esc(c[1]))); });
   H.push('</div>');
 
@@ -3816,36 +3914,36 @@ function showReading(inp) {
   H.push(row(chip('計算') + '50音歴', '第' + cal.gojuon.no + '音「' + cal.gojuon.sound + '」'));
   H.push(row(chip('計算') + '五行の記号数',
     A.elems.map(function (e) { return e.elem + e.count; }).join('　')
-    + '<br><span style="font-size:10px;color:#8896b1">命式というモデルの中に記号がいくつ現れたかであって、性格の強さの数値ではありません。</span>'));
+    + '<br><span class="sub">命式というモデルの中に記号がいくつ現れたかであって、性格の強さの数値ではありません。</span>'));
   H.push('</div>');
 
   /* --- 4. 伝統モデル上の構造 --- */
   H.push('<div class="rsec"><h3>4. 伝統モデル上の構造 <span>採用流派の固定対応</span></h3>');
-  H.push('<p style="font-size:10.5px;color:#8896b1;line-height:1.7;margin-bottom:9px">'
+  H.push('<p class="lead">'
     + '以下は、法則が<b>星の配置という面</b>に現れたときの位置です。'
     + 'あなたの生活という面に、これがそのままの形で出ているとは限りません。'
     + '同じ法則でも、面が違えば現れ方が変わります。'
     + 'どう出ているかは、この先の仮説を手がかりに、実際の出来事で確かめていくものです。</p>');
   A.axes.forEach(function (a) {
     H.push(row(chip('伝統') + a.axis, a.label + '：' + a.count + '個'
-      + (a.from.length ? '<br><span style="font-size:10px;color:#8896b1">' + esc(a.from.join('、')) + '</span>' : '')));
+      + (a.from.length ? '<br><span class="sub">' + esc(a.from.join('、')) + '</span>' : '')));
   });
   H.push(row(chip('伝統') + '十大主星',
     S.stars.map(function (s) { return s.star; }).join('、')
-    + '<br><span style="font-size:10px;color:#8896b1">十神の再命名として写像（高尾学館系の対応）。</span>'));
+    + '<br><span class="sub">十神の再命名として写像（高尾学館系の対応）。</span>'));
   H.push(row(chip('伝統') + '十二大従星',
     S.jusei.map(function (j) { return j.src + '→' + j.star + '（' + j.stage + '）'; }).join('<br>')));
   H.push(row(chip('計算') + '天中殺',
     '日柱：' + S.dayTenchusatsu.name + '／年柱：' + S.yearTenchusatsu.name
-    + '<br><span style="font-size:10px;color:#8896b1">十干10と十二支12の差から、一旬に必ず二支が余るという算術です。'
+    + '<br><span class="sub">十干10と十二支12の差から、一旬に必ず二支が余るという算術です。'
     + '「天が欠ける」「不運」は' + chip('伝統') + 'の解釈であって、この算術とは別物です。吉凶判定には使いません。</span>'));
   H.push(row(chip('伝統') + '本命宿（宿曜道）',
-    '<b style="font-size:15px">' + K.name + '</b>'
-    + '<br><span style="font-size:10px;color:#8896b1">' + esc(K.formula) + '</span>'
-    + (K.leapNote ? '<br><span style="font-size:10px;color:#8896b1">' + esc(K.leapNote) + '</span>' : '')));
+    '<b class="big">' + K.name + '</b>'
+    + '<br><span class="sub">' + esc(K.formula) + '</span>'
+    + (K.leapNote ? '<br><span class="sub">' + esc(K.leapNote) + '</span>' : '')));
   H.push(row(chip('計算') + '（比較資料）天文方式',
     K.astro.name + '（月の恒星黄経 ' + K.astro.sidLon.toFixed(2) + '°／ラヒリ）'
-    + '<br><span style="font-size:10px;color:#8896b1">'
+    + '<br><span class="sub">'
     + (K.agrees ? 'たまたま一致しました。' : '伝統暦方式とは<b>異なります</b>。')
     + '両者は別のモデルなので一致するとは限りません。宿曜道としては上の伝統暦方式を正とし、'
     + 'これは比較のためだけに出しています。混ぜて使っていません。</span>'));
@@ -3857,12 +3955,12 @@ function showReading(inp) {
 
   /* --- 中立軸 --- */
   H.push('<div class="rsec"><h3>中立軸への変換 <span>三術を直接足し合わせない</span></h3>');
-  H.push('<p style="font-size:10.5px;color:#8896b1;line-height:1.7;margin-bottom:9px">'
+  H.push('<p class="lead">'
     + '四柱推命・算命学・宿曜道は別々のモデルなので、結果をそのまま合算しません。'
     + 'いったん次の7つの軸へ移してから見比べます。流派をまたいだ一致は'
     + '「象徴が重なった」というだけで、科学的な裏づけではありません。</p>');
   R.neutral.forEach(function (n) {
-    H.push(row(n.key, esc(n.observed) + '<br><span style="font-size:10px;color:#9db4dd">→ ' + esc(n.question) + '</span>'));
+    H.push(row(n.key, esc(n.observed) + '<br><span class="subq">→ ' + esc(n.question) + '</span>'));
   });
   H.push('</div>');
 
@@ -3888,7 +3986,7 @@ function showReading(inp) {
 
   /* --- 6. 課題と成長実験 --- */
   H.push('<div class="rsec"><h3>6. 課題と成長実験 <span>2週間以内に試せること</span></h3>');
-  H.push('<p style="font-size:10.5px;color:#8896b1;line-height:1.7;margin-bottom:9px">'
+  H.push('<p class="lead">'
     + '課題は欠点ではなく、強みの過剰使用または環境との不適合として書いています。</p>');
   R.themes.forEach(function (t) {
     var src = RC.hypotheses[t.id];
@@ -3924,12 +4022,12 @@ function showReading(inp) {
     ? 'あなたが書いた「' + esc(inp.self.slice(0, 80)) + (inp.self.length > 80 ? '…' : '') + '」は、'
       + '上の手がかりと突き合わせる材料です。生活の面に出ていると見えたものを'
       + chip('確認') + 'に移してください。'
-      + '<br><span style="font-size:10px;color:#8896b1">この記録はアプリではなくあなたが付けます。各項目の状態ボタンで残せます。</span>'
+      + '<br><span class="sub">この記録はアプリではなくあなたが付けます。各項目の状態ボタンで残せます。</span>'
     : 'まだありません。各項目の状態ボタンで、どの面に出ているかを記録できます。'));
   H.push(row(chip('仮説'), '上の項目はすべて「まだ見ていない」から始まります。'
     + '問いに具体例で答えられたものが、この面に出ていると分かります。'));
   H.push(row(chip('別面'), 'いま見ている面に出ていなかったものは、消さずに「別の面に出ている」として残してください。'
-    + '<br><span style="font-size:10px;color:#8896b1">それは外れた記録ではなく、'
+    + '<br><span class="sub">それは外れた記録ではなく、'
     + 'どこを探せばよいかが一つ分かった記録です。'
     + '同じ法則でも、現れる面が変われば形が変わります。'
     + 'ずれているのは法則ではなく、いまどの面を見ているかです。</span>'));
@@ -3943,7 +4041,7 @@ function showReading(inp) {
   R.themes.slice(0, 3).forEach(function (t, i) {
     H.push('<div class="rlead"><p>' + (i + 1) + '. ' + esc(t.reality_check) + '</p></div>');
   });
-  H.push('<p style="font-size:10.5px;color:#8896b1;line-height:1.7;margin-top:10px">'
+  H.push('<p class="lead mt">'
     + 'この読みは、医療・法律・採用・信用・結婚などの判断には使えません。'
     + 'そうした判断へ誘導する内容も含めていません。</p>');
   H.push('</div>');
@@ -4049,6 +4147,13 @@ document.getElementById('readbody').addEventListener('click', function (e) {
    =================================================================== */
 window.addEventListener('resize', resize);
 window.addEventListener('orientationchange', function () { setTimeout(resize, 220); });
+buildTextZoomUI();
+setTscale(tscale, false);          /* 保存されていた倍率を復元 */
+attachTextPinch(document.getElementById('sheet'));
+attachTextPinch(document.getElementById('cal'));
+attachTextPinch(document.getElementById('birth'));
+attachTextPinch(document.getElementById('read'));
+
 resize();
 buildSprites();
 refreshOrbits(centuriesFromMs(simMs));
@@ -4079,7 +4184,9 @@ window.SolarDebug = { planetState: planetState, solveKepler: solveKepler,
   timeStatusText: function () { return eTstat.textContent; },
   apply: function () { return applyBirth(); },
   lastReading: function () { return lastReading; },
-  statusStore: function () { return statusStore; } };
+  statusStore: function () { return statusStore; },
+  getTscale: function () { return tscale; },
+  setTscale: function (v) { setTscale(v, true); } };
 })();
 </script>
 </body>
